@@ -1,4 +1,15 @@
-import { Column, Model, Table } from 'sequelize-typescript';
+import {
+  BelongsTo,
+  Column,
+  DataType,
+  ForeignKey,
+  HasMany,
+  Model,
+  Table
+} from 'sequelize-typescript';
+import { Rank } from './ranks.model';
+import { Order } from './orders.model';
+import { Redeem } from './redeem.model';
 
 @Table({
   tableName: 'users',
@@ -11,12 +22,47 @@ export class User extends Model {
   @Column
   lastName: string;
 
-  @Column
-  email: string;
+  @Column({
+    unique: true
+  })
+  phoneNumber: string;
 
   @Column
   password: string;
 
+  @Column({
+    unique: true
+  })
+  email: string;
+
+  @Column({
+    type: DataType.DOUBLE
+  })
+  totalPoints: number;
+
+  @Column({
+    type: DataType.DOUBLE
+  })
+  currentPoints: number;
+
   @Column({ defaultValue: false })
-  isActive: boolean;
+  isAdmin: boolean;
+
+  @Column({ defaultValue: false })
+  isVerified: boolean;
+
+  @ForeignKey(() => Rank)
+  @Column({
+    type: DataType.UUID
+  })
+  rankId: string;
+
+  @BelongsTo(() => Rank)
+  rank: Rank;
+
+  @HasMany(() => Order)
+  orders: Order[];
+
+  @HasMany(() => Redeem)
+  redeems: Redeem[];
 }

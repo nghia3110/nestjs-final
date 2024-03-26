@@ -7,7 +7,8 @@ module.exports = {
       id: {
         allowNull: false,
         primaryKey: true,
-        type: Sequelize.UUID
+        type: Sequelize.UUID,
+        defaultValue: Sequelize.UUIDV4,
       },
       name: {
         allowNull: false,
@@ -22,7 +23,7 @@ module.exports = {
         type: Sequelize.INTEGER
       },
       photo: {
-        type: Sequelize.BLOB
+        type: Sequelize.STRING
       },
       description: {
         type: Sequelize.STRING

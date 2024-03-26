@@ -7,47 +7,42 @@ module.exports = {
       id: {
         allowNull: false,
         primaryKey: true,
-        type: Sequelize.UUID
+        type: Sequelize.UUID,
+        defaultValue: Sequelize.UUIDV4,
       },
-      username: {
-        allowNull: false,
+      phone_number: {
         unique: true,
         type: Sequelize.STRING
       },
       password: {
-        allowNull: false,
+        type: Sequelize.STRING
+      },
+      first_name: {
+        type: Sequelize.STRING
+      },
+      last_name: {
         type: Sequelize.STRING
       },
       email: {
-        allowNull: false,
-        unique: true,
-        type: Sequelize.STRING
-      },
-      phone_number: {
-        allowNull: false,
         unique: true,
         type: Sequelize.STRING
       },
       total_points: {
-        allowNull: false,
         type: Sequelize.DOUBLE,
         defaultValue: 0
       },
       current_points: {
-        allowNull: false,
         type: Sequelize.DOUBLE,
         defaultValue: 0
       },
-      role: {
-        allowNull: false,
-        type: Sequelize.STRING
-      },
       rank_id: {
-        allowNull: false,
         type: Sequelize.UUID
       },
+      is_admin: {
+        type: Sequelize.BOOLEAN,
+        defaultValue: false
+      },
       is_verified: {
-        allowNull: false,
         type: Sequelize.BOOLEAN,
         defaultValue: false
       },

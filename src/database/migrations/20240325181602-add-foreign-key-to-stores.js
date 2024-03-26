@@ -11,8 +11,8 @@ module.exports = {
         table: 'accumulate_methods',
         field: 'id',
       },
-      onDelete: 'CASCADE',
-      onUpdate: 'CASCADE',
+      onDelete: 'NO ACTION',
+      onUpdate: 'NO ACTION',
     });
   },
 

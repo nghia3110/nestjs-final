@@ -7,7 +7,8 @@ module.exports = {
       id: {
         allowNull: false,
         primaryKey: true,
-        type: Sequelize.UUID
+        type: Sequelize.UUID,
+        defaultValue: Sequelize.UUIDV4,
       },
       user_id: {
         allowNull: false,
@@ -29,11 +30,6 @@ module.exports = {
         defaultValue: Sequelize.fn('now'),
       },
     });
-    /**
-     * Add altering commands here.
-     *
-     * Example:
-     */
   },
 
   async down(queryInterface, Sequelize) {

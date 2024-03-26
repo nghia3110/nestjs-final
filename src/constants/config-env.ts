@@ -36,13 +36,6 @@ export const POSTGRES_USERNAME = process.env.POSTGRES_USERNAME || 'postgres';
 export const POSTGRES_PASSWORD = process.env.POSTGRES_PASSWORD || 'password';
 export const POSTGRES_DATABASE = process.env.POSTGRES_DATABASE || 'base';
 
-// Mysql
-export const MYSQL_HOST = process.env.MYSQL_HOST || 'localhost';
-export const MYSQL_PORT = +process.env.MYSQL_PORT || 3306;
-export const MYSQL_USERNAME = process.env.MYSQL_USERNAME || 'mysql';
-export const MYSQL_PASSWORD = process.env.MYSQL_PASSWORD || 'password';
-export const MYSQL_DATABASE = process.env.MYSQL_DATABASE || 'base';
-
 // Redis
 export const REDIS_HOST = process.env.REDIS_HOST || 'localhost';
 export const REDIS_PORT = +process.env.REDIS_PORT || 6379;

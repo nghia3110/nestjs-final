@@ -1,4 +1,4 @@
 export enum EUserType {
-  ADMIN = 'ADMIN',
-  CLIENT = 'CLIENT',
+  ADMIN = 'Admin',
+  USER = 'User',
 }
