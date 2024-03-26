@@ -2,7 +2,7 @@ import { Body, Controller, HttpCode, Post } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { ForgetPasswordDto, LoginDto, SendOTPDto, VerifyOTPDto } from './dto';
-import { UsersService } from './users.services';
+import { UsersService } from './users.service';
 
 @ApiTags('users')
 @Controller('users')

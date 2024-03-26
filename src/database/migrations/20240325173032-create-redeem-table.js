@@ -1,23 +1,22 @@
 'use strict';
+
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('users', {
+    await queryInterface.createTable('redeem', {
       id: {
         allowNull: false,
-        autoIncrement: true,
         primaryKey: true,
-        type: Sequelize.INTEGER,
+        type: Sequelize.UUID
       },
-      first_name: {
+      user_id: {
+        allowNull: false,
+        type: Sequelize.UUID
+      },
+      status: {
+        allowNull: false,
         type: Sequelize.STRING,
-      },
-      last_name: {
-        type: Sequelize.STRING,
-      },
-      is_active: {
-        type: Sequelize.BOOLEAN,
-        defaultValue: true,
+        defaultValue: 'pending'
       },
       created_at: {
         allowNull: false,
@@ -31,7 +30,8 @@ module.exports = {
       },
     });
   },
+
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('users');
-  },
+    await queryInterface.dropTable('redeem');
+  }
 };

@@ -4,7 +4,7 @@ import { User } from 'src/database';
 
 import { UsersController } from './users.controller';
 import { UsersRepository } from './users.repository';
-import { UsersService } from './users.services';
+import { UsersService } from './users.service';
 
 @Module({
   imports: [SequelizeModule.forFeature([User])],
