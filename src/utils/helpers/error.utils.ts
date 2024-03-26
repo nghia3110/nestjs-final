@@ -4,6 +4,9 @@ export class ErrorHelper {
   static BadRequestException(msg: string | string[]) {
     throw new HttpException(msg, HttpStatus.BAD_REQUEST);
   }
+  static ConflictException(msg: string) {
+    throw new HttpException(msg, HttpStatus.CONFLICT);
+  }
   static UnauthorizedException(msg: string) {
     throw new HttpException(msg, HttpStatus.UNAUTHORIZED);
   }

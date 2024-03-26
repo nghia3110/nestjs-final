@@ -2,12 +2,13 @@ import { BelongsTo, BelongsToMany, Column, DataType, ForeignKey, Model, Table } 
 import { Item } from "./items.model";
 import { RedeemDetail } from "./redeem-details.model";
 import { Redeem } from "./redeem.model";
+import { BaseModel } from "../base.model";
 
 @Table({
     tableName: 'redeem_items',
     underscored: true
 })
-export class RedeemItem extends Model {
+export class RedeemItem extends BaseModel {
     @Column({
         type: DataType.DOUBLE
     })

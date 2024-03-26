@@ -1,12 +1,13 @@
 import { BelongsTo, Column, DataType, ForeignKey, Model, Table } from "sequelize-typescript";
 import { AccumulateMethod } from "./accumulate-methods.model";
 import { Rank } from "./ranks.model";
+import { BaseModel } from "../base.model";
 
 @Table({
     tableName: 'method_details',
     underscored: true
 })
-export class MethodDetail extends Model {
+export class MethodDetail extends BaseModel {
     @Column({
         type: DataType.DOUBLE
     })

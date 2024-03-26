@@ -10,12 +10,13 @@ import {
 import { Rank } from './ranks.model';
 import { Order } from './orders.model';
 import { Redeem } from './redeem.model';
+import { BaseModel } from '../base.model';
 
 @Table({
   tableName: 'users',
   underscored: true,
 })
-export class User extends Model {
+export class User extends BaseModel {
   @Column
   firstName: string;
 
@@ -36,12 +37,14 @@ export class User extends Model {
   email: string;
 
   @Column({
-    type: DataType.DOUBLE
+    type: DataType.DOUBLE,
+    defaultValue: 0
   })
   totalPoints: number;
 
   @Column({
-    type: DataType.DOUBLE
+    type: DataType.DOUBLE,
+    defaultValue: 0
   })
   currentPoints: number;
 

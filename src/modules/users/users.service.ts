@@ -5,6 +5,7 @@ import {
   ACCESS_TOKEN_EXPIRE_TIME,
   ACCESS_TOKEN_SECRET_KEY,
   APPLICATION,
+  ERank,
   HASH,
   OTP,
   OTP_TIME_EXPIRE,
@@ -20,14 +21,116 @@ import {
   SendEmailHelper,
   TokenHelper,
 } from 'src/utils/helpers';
-import { IToken } from 'src/interfaces';
+import { IPaginationRes, IToken } from 'src/interfaces';
 
 import { LoginDto } from './dto/login.dto';
 import { UsersRepository } from './users.repository';
+import { CreateUserDto, GetListUserDto, UpdateUserDto } from './dto';
+import { Rank, User } from 'src/database';
+import { Op } from 'sequelize';
+import { RanksService } from '../ranks/ranks.service';
 
 @Injectable()
 export class UsersService {
-  constructor(private usersRepository: UsersRepository) {}
+  constructor(
+    private readonly usersRepository: UsersRepository,
+    private readonly ranksService: RanksService) { }
+
+  async getListUsers(paginateInfo: GetListUserDto): Promise<IPaginationRes<User>> {
+    const { page, limit } = paginateInfo;
+    return this.usersRepository.paginate(parseInt(page), parseInt(limit), {
+      include: [{
+        model: Rank,
+        as: 'rank'
+      }],
+      attributes: { exclude: ['password', 'rankId'] },
+      raw: false,
+      nest: true
+    });
+  }
+
+  async getUserById(id: string): Promise<User> {
+    return await this.usersRepository.findOne({
+      where: {
+        id
+      },
+      include: [{
+        model: Rank,
+        as: 'rank'
+      }],
+      attributes: { exclude: ['password', 'rankId'] },
+      raw: false,
+      nest: true
+    });
+  }
+
+  async createUser(body: CreateUserDto): Promise<User> {
+    const user = this.usersRepository.findOne({
+      where: {
+        [Op.or]: {
+          phoneNumber: body.phoneNumber,
+          email: body.email
+        }
+      }
+    });
+
+    if (user) {
+      ErrorHelper.ConflictException(USER.CONFLICT);
+    }
+    const rank = await this.ranksService.findByName(ERank.BRONZE);
+
+    const hashPassword = await EncryptHelper.hash(body.password);
+
+    return await this.usersRepository.create(
+      {
+        ...body,
+        password: hashPassword,
+        rankId: rank.id
+      })
+  }
+
+  async updateUser(id: string, body: UpdateUserDto): Promise<User[]> {
+    const user = await this.usersRepository.findOne({
+      where: {
+        id
+      }
+    });
+
+    if (!user) {
+      ErrorHelper.BadRequestException(USER.USER_NOT_FOUND);
+    }
+
+    if ((body.email && body.email !== user.email)
+      || (body.phoneNumber && body.phoneNumber !== user.phoneNumber)) {
+      const findUser = await this.usersRepository.findOne({
+        where: {
+          [Op.or]: {
+            email: body.email,
+            phoneNumber: body.phoneNumber
+          }
+        }
+      });
+      if (findUser) {
+        ErrorHelper.ConflictException(USER.CONFLICT);
+      }
+    }
+
+    return await this.usersRepository.update(body, { where: { id } });
+  }
+
+  async deleteUser(id: string): Promise<number> {
+    const user = await this.usersRepository.findOne({
+      where: {
+        id
+      }
+    });
+
+    if (!user) {
+      ErrorHelper.BadRequestException(USER.USER_NOT_FOUND);
+    }
+
+    return await this.usersRepository.delete({ where: { id } });
+  }
 
   async login(body: LoginDto): Promise<object> {
     const { password, email } = body;
@@ -48,7 +151,12 @@ export class UsersService {
     if (!isValidPassword)
       ErrorHelper.BadRequestException(USER.INVALID_PASSWORD);
 
-    const token = this.generateToken({ id: user.id });
+    const token = this.generateToken(
+      {
+        id: user.id,
+        isAdmin: user.isAdmin
+      }
+    );
     delete user.password;
     return {
       ...token,

@@ -5,7 +5,7 @@ import { ErrorHelper, TokenHelper } from 'src/utils';
 
 @Injectable()
 export class UserGuard implements CanActivate {
-  constructor(private readonly reflector: Reflector) {}
+  constructor(private readonly reflector: Reflector) { }
 
   async canActivate(context: ExecutionContext): Promise<any> {
     const req = context.switchToHttp().getRequest();

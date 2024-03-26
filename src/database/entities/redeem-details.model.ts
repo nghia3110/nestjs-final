@@ -1,12 +1,13 @@
 import { Column, DataType, ForeignKey, Model, Table } from "sequelize-typescript";
 import { Redeem } from "./redeem.model";
 import { RedeemItem } from "./redeem-items.model";
+import { BaseModel } from "../base.model";
 
 @Table({
     tableName: 'redeem_details',
     underscored: true
 })
-export class RedeemDetail extends Model {
+export class RedeemDetail extends BaseModel {
     @Column({
         type: DataType.UUID
     })

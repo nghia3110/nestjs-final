@@ -23,9 +23,9 @@ export class BaseRepository<T extends Model> {
   }
 
   async paginate(
-    findAndCountOptions?: FindAndCountOptions<T>,
     page = FIRST_PAGE,
     limit = LIMIT_PAGE,
+    findAndCountOptions?: FindAndCountOptions<T>,
   ): Promise<IPaginationRes<T>> {
     const offset = (page - 1) * limit;
     const { rows, count } = await this.rawPaginate({

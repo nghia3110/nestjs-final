@@ -19,6 +19,8 @@ export class HttpExceptionFilter implements ExceptionFilter<HttpException> {
         ? exception.getStatus()
         : HttpStatus.INTERNAL_SERVER_ERROR;
 
+    console.log(exception)
+
     if (status === 500) {
       return response.status(status).json({
         success: false,

@@ -1,13 +1,85 @@
-import { Body, Controller, HttpCode, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Post,
+  Put,
+  Query,
+  UseGuards
+} from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 
-import { ForgetPasswordDto, LoginDto, SendOTPDto, VerifyOTPDto } from './dto';
+import {
+  CreateUserDto,
+  ForgetPasswordDto,
+  GetListUserDto,
+  LoginDto,
+  SendOTPDto,
+  UpdateUserDto,
+  VerifyOTPDto
+} from './dto';
 import { UsersService } from './users.service';
+import { AdminGuard, UuidParam } from 'src/utils';
 
 @ApiTags('users')
 @Controller('users')
 export class UsersController {
-  constructor(private usersService: UsersService) {}
+  constructor(private usersService: UsersService) { }
+
+  @ApiOperation({ summary: 'API get list users' })
+  @UseGuards(AdminGuard)
+  @Get()
+  @HttpCode(200)
+  async getListUsers(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string) {
+    const paginateInfo = { page, limit } as GetListUserDto;
+    return await this.usersService.getListUsers(paginateInfo);
+  }
+
+  @ApiOperation({ summary: 'API get user by Id' })
+  @UseGuards(AdminGuard)
+  @Get(':id')
+  @HttpCode(200)
+  async getUserById(@UuidParam('id') id: string) {
+    return await this.usersService.getUserById(id);
+  }
+
+  @ApiOperation({ summary: 'API create user' })
+  @ApiBody({
+    type: CreateUserDto,
+    required: true,
+    description: 'Admin create user'
+  })
+  @UseGuards(AdminGuard)
+  @Post()
+  @HttpCode(201)
+  async createUser(@Body() payload: CreateUserDto) {
+    return await this.usersService.createUser(payload);
+  }
+
+  @ApiOperation({ summary: 'API update user' })
+  @ApiBody({
+    type: UpdateUserDto,
+    required: true,
+    description: 'Admin update user'
+  })
+  @UseGuards(AdminGuard)
+  @Put(':id')
+  @HttpCode(201)
+  async updateUser(@UuidParam('id') id: string, @Body() payload: UpdateUserDto) {
+    return await this.usersService.updateUser(id, payload);
+  }
+
+  @ApiOperation({ summary: 'API delete user' })
+  @UseGuards(AdminGuard)
+  @Delete(':id')
+  @HttpCode(200)
+  async deleteUser(@UuidParam('id') id: string) {
+    await this.usersService.deleteUser(id);
+  }
 
   @ApiOperation({ summary: 'API Login' })
   @ApiBody({

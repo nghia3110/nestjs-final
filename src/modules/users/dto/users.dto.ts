@@ -1,5 +1,15 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsBoolean, IsNumberString, IsOptional, IsString } from 'class-validator';
+import { OmitType } from '@nestjs/mapped-types';
+import { ApiProperty, PartialType } from '@nestjs/swagger';
+import {
+  IsBoolean,
+  IsEmail,
+  IsNotEmpty,
+  IsNumberString,
+  IsOptional,
+  IsString,
+  MaxLength,
+  MinLength
+} from 'class-validator';
 
 export class GetListUserDto {
   @IsOptional()
@@ -13,44 +23,62 @@ export class GetListUserDto {
 
 export class CreateUserDto {
   @IsString()
+  @IsNotEmpty({ message: "The firstname field is required!" })
   @ApiProperty({
     type: String,
     description: 'First name',
-    example: 'Johan',
+    example: 'Nghia',
   })
   firstName: string;
 
   @IsString()
+  @IsNotEmpty({ message: "The lastname field is required!" })
   @ApiProperty({
     type: String,
     description: 'Last name',
-    example: 'Pham',
+    example: 'Ha',
   })
   lastName: string;
+
+  @IsString()
+  @IsNotEmpty({ message: "The phonenumber field is required!" })
+  @IsNumberString()
+  @ApiProperty({
+    type: String,
+    description: 'Phone number',
+    example: '0913289351'
+  })
+  phoneNumber: string;
+
+  @IsString()
+  @MaxLength(32, { message: 'The Password field is less than 32 characters.' })
+  @MinLength(6, { message: 'The Password field is from 6 characters or more' })
+  @IsNotEmpty({ message: "The Password field is required!" })
+  @ApiProperty({
+    type: String,
+    description: 'Password',
+    example: '235689@Jkl'
+  })
+  password: string;
+
+  @IsEmail()
+  @IsString()
+  @IsNotEmpty({message: "The Email field is required!"})
+  @ApiProperty({
+    type: String,
+    description: 'Email',
+    example: 'example@gmail.com'
+  })
+  email: string;
 }
 
-export class UpdateUserDto extends CreateUserDto {
+export class UpdateUserDto extends OmitType(CreateUserDto, ['password'] as const) {
   @IsBoolean()
   @IsOptional()
   @ApiProperty({
     type: Boolean,
-    description: 'Set status active or inactive',
+    description: 'Set user is verified or not',
     example: true,
   })
-  isActive: boolean;
-}
-
-export class UpdateStatusDto {
-  @IsBoolean()
-  @ApiProperty({
-    type: Boolean,
-    description: 'User status',
-    example: true,
-  })
-  status: boolean;
-}
-
-export class IdParamsDto {
-  @IsNumberString()
-  id: number;
+  isVerified: boolean;
 }

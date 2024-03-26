@@ -2,12 +2,13 @@ import { BelongsTo, BelongsToMany, Column, DataType, ForeignKey, HasMany, Model,
 import { User } from "./users.model";
 import { OrderDetail } from "./order-details.model";
 import { Item } from "./items.model";
+import { BaseModel } from "../base.model";
 
 @Table({
     tableName: 'orders',
     underscored: true
 })
-export class Order extends Model {
+export class Order extends BaseModel {
     @Column
     status: string;
 
