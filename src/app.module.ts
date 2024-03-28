@@ -8,12 +8,13 @@ import { RanksModule } from './modules/ranks/ranks.module';
 
 @Module({
   imports: [
-    IoRedisModule, 
-    UploadsModule, 
+    IoRedisModule,
+    UploadsModule,
     UsersModule,
-    RanksModule, 
-    PostgresqlModule],
+    RanksModule,
+    PostgresqlModule
+  ],
   controllers: [AppController],
   providers: [],
 })
-export class AppModule {}
+export class AppModule { }

@@ -1,4 +1,4 @@
-export interface IPayload {
+export interface ITokenPayload {
     id: string,
     isAdmin: boolean
 }
