@@ -18,6 +18,8 @@ import {
 } from './dto';
 import { StoresService } from './stores.service';
 import { AdminGuard, UuidParam } from 'src/utils';
+import { SendOTPDto, VerifyOTPDto } from './dto/otp.dto';
+import { LoginDto } from './dto/login.dto';
 
 @ApiTags('stores')
 @Controller('stores')
@@ -83,5 +85,59 @@ export class StoresController {
     @HttpCode(201)
     async approveStore(@UuidParam('id') id: string) {
         return await this.storesService.approveStore(id);
+    }
+
+    @ApiOperation({ summary: 'API login store' })
+    @ApiBody({
+        type: LoginDto,
+        required: true,
+        description: 'Login store'
+    })
+    @Post("login")
+    @HttpCode(201)
+    async login(@Body() payload: LoginDto) {
+        return await this.storesService.login(payload);
+    }
+
+    @ApiOperation({ summary: 'API register store' })
+    @ApiBody({
+        type: CreateStoreDto,
+        required: true,
+        description: 'Register store'
+    })
+    @Post("register")
+    @HttpCode(201)
+    async register(@Body() payload: CreateStoreDto) {
+        return await this.storesService.register(payload);
+    }
+
+    @ApiOperation({ summary: 'API send OTP' })
+    @ApiBody({
+        type: SendOTPDto,
+        required: true,
+        description: 'Send OTP',
+    })
+    @Post('/send-otp')
+    @HttpCode(200)
+    async sendOtp(@Body() payload: SendOTPDto) {
+        const { email, hash } = payload;
+        const result = await this.storesService.sendOTP(email, hash);
+        return {
+            hash: result,
+        };
+    }
+
+    @ApiOperation({ summary: 'API verify OTP' })
+    @ApiBody({
+        type: VerifyOTPDto,
+        required: true,
+        description: 'Verify OTP',
+    })
+    @Post('/verify-otp')
+    @HttpCode(200)
+    async verifyOtp(@Body() payload: VerifyOTPDto) {
+        const { otp, hash } = payload;
+        const result = await this.storesService.verifyOTP(otp, hash);
+        return result;
     }
 }

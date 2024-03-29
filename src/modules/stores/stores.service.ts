@@ -1,11 +1,15 @@
 import { Injectable } from "@nestjs/common";
+import moment from "moment";
+import md5 from 'md5';
+
 import { StoresRepository } from "./stores.repository";
-import { IPaginationRes } from "src/interfaces";
+import { IPaginationRes, IToken } from "src/interfaces";
 import { AccumulateMethod, Store } from "src/database";
 import { CreateStoreDto, GetListStoresDto, UpdateStoreDto } from "./dto";
-import { EncryptHelper, ErrorHelper } from "src/utils";
-import { EMAIL, STORE } from "src/constants";
+import { CommonHelper, EncryptHelper, ErrorHelper, SendEmailHelper, TokenHelper } from "src/utils";
+import { ACCESS_TOKEN_EXPIRE_TIME, ACCESS_TOKEN_SECRET_KEY, APPLICATION, EMAIL, OTP, OTP_TIME_EXPIRE, REFRESH_TOKEN_EXPIRE_TIME, REFRESH_TOKEN_SECRET_KEY, SECRET_KEY_SEND_GMAIL, STORE } from "src/constants";
 import { MethodsService } from "../methods/methods.service";
+import { LoginDto } from "./dto/login.dto";
 
 @Injectable()
 export class StoresService {
@@ -122,5 +126,158 @@ export class StoresService {
         }
 
         return this.storesRepository.update({ isApproved: true }, { where: { id } });
+    }
+
+    async register(body: CreateStoreDto): Promise<string> {
+        const store = await this.storesRepository.findOne({
+            where: {
+                email: body.email
+            }
+        });
+        if (store) {
+            ErrorHelper.ConflictException(EMAIL.EMAIL_EXIST);
+        }
+
+        const method = await this.methodsService.findById(body.methodId);
+        if (!method) {
+            ErrorHelper.NotFoundException(STORE.METHOD_NOT_FOUND);
+        }
+
+        const hashPassword = await EncryptHelper.hash(body.password);
+
+        const newStore = await this.storesRepository.create(
+            {
+                ...body,
+                password: hashPassword
+            });
+
+        const hashCode = md5(
+            newStore.email + SECRET_KEY_SEND_GMAIL
+        );
+
+        return hashCode;
+    }
+
+    async login(body: LoginDto): Promise<object> {
+        const { password, email } = body;
+
+        const store = await this.storesRepository.findOne({
+            where: {
+                email
+            },
+        });
+
+        if (!store) {
+            ErrorHelper.BadRequestException(STORE.STORE_NOT_FOUND);
+        }
+
+        const isValidPassword = await EncryptHelper.compare(
+            password,
+            store.password,
+        );
+        if (!isValidPassword)
+            ErrorHelper.BadRequestException(STORE.INVALID_PASSWORD);
+
+        if (!store.isVerified) {
+            ErrorHelper.BadRequestException(STORE.STORE_NOT_VERIFIED);
+        }
+
+        if (!store.isApproved) {
+            ErrorHelper.BadRequestException(STORE.STORE_NOT_APPROVED);
+        }
+
+        const token = this.generateToken(
+            {
+                id: store.id,
+            }
+        );
+        delete store.password;
+        return {
+            ...token,
+            store,
+        };
+    }
+
+    private generateToken(payload: object): IToken {
+        const { token: accessToken, expires } = TokenHelper.generate(
+            payload,
+            ACCESS_TOKEN_SECRET_KEY,
+            ACCESS_TOKEN_EXPIRE_TIME,
+        );
+        const { token: refreshToken } = TokenHelper.generate(
+            payload,
+            REFRESH_TOKEN_SECRET_KEY,
+            REFRESH_TOKEN_EXPIRE_TIME,
+        );
+
+        return {
+            accessToken,
+            expires,
+            refreshToken,
+        };
+    }
+
+    async sendOTP(email: string, hash: string): Promise<string> {
+        const checkHash = md5(
+            email + SECRET_KEY_SEND_GMAIL,
+        );
+
+        if (checkHash !== hash) {
+            ErrorHelper.InternalServerErrorException(APPLICATION.HASH_IS_NOT_CORRECT);
+        }
+
+        const OTP = CommonHelper.generateOTP();
+        SendEmailHelper.sendOTP({
+            to: email,
+            subject: 'Confirm OTP',
+            OTP,
+        });
+
+        const hashCode = CommonHelper.hashData(
+            JSON.stringify({
+                otp: OTP,
+                time: moment().add(OTP_TIME_EXPIRE, 'second').valueOf(),
+                email,
+                isVerified: false,
+            }),
+        );
+        return hashCode;
+    }
+
+    async verifyOTP(otp: string, hash: string): Promise<object> {
+        const checkHashInfo = CommonHelper.checkHashData(hash);
+        if (!checkHashInfo) {
+            ErrorHelper.BadRequestException(APPLICATION.VERIFY_FAIL);
+        }
+
+        const hashInfo = JSON.parse(checkHashInfo);
+        if (hashInfo.time < new Date().getTime()) {
+            ErrorHelper.InternalServerErrorException(OTP.OTP_TIMEOUT);
+        }
+
+        if (otp !== hashInfo.otp) {
+            ErrorHelper.InternalServerErrorException(OTP.OTP_INVALID);
+        }
+
+        const store = await this.storesRepository.findOne({
+            where: {
+                email: hashInfo.email
+            }
+        });
+        if (!store) {
+            ErrorHelper.NotFoundException(STORE.STORE_NOT_FOUND);
+        }
+
+        await this.storesRepository.update(
+            { isVerified: true },
+            {
+                where: {
+                    email: hashInfo.email
+                }
+            });
+        return {
+            email: hashInfo.email,
+            isVerified: true
+        }
     }
 }
