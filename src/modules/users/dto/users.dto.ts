@@ -72,7 +72,7 @@ export class CreateUserDto {
   email: string;
 }
 
-export class UpdateUserDto extends OmitType(CreateUserDto, ['password'] as const) {
+export class UpdateUserDto extends OmitType(PartialType(CreateUserDto), ['password'] as const) {
   @IsBoolean()
   @IsOptional()
   @ApiProperty({

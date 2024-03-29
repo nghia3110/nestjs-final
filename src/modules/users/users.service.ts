@@ -65,7 +65,7 @@ export class UsersService {
   }
 
   async createUser(body: CreateUserDto): Promise<User> {
-    const user = this.usersRepository.findOne({
+    const user = await this.usersRepository.findOne({
       where: {
         [Op.or]: {
           phoneNumber: body.phoneNumber,
@@ -85,6 +85,7 @@ export class UsersService {
       {
         ...body,
         password: hashPassword,
+        isVerified: true,
         rankId: rank.id
       })
   }
