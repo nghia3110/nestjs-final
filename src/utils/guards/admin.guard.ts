@@ -1,6 +1,6 @@
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { ACCESS_TOKEN_SECRET_KEY } from 'src/constants';
+import { ACCESS_TOKEN_SECRET_KEY, AUTH } from 'src/constants';
 import { ITokenPayload } from 'src/interfaces';
 import { ErrorHelper, TokenHelper } from 'src/utils';
 
@@ -22,11 +22,11 @@ export class AdminGuard implements CanActivate {
         if (bearer === 'Bearer' && accessToken !== '') {
             const payload = TokenHelper.verify(accessToken, ACCESS_TOKEN_SECRET_KEY) as ITokenPayload;
             if (!payload.isAdmin) {
-                ErrorHelper.BadRequestException("You're not admin!");
+                ErrorHelper.BadRequestException(AUTH.NOT_ADMIN);
             }
             return payload;
         } else {
-            ErrorHelper.UnauthorizedException('Unauthorized');
+            ErrorHelper.UnauthorizedException(AUTH.UNAUTHORIZED);
         }
     }
 }

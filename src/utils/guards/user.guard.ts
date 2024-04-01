@@ -1,6 +1,6 @@
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { ACCESS_TOKEN_SECRET_KEY } from 'src/constants';
+import { ACCESS_TOKEN_SECRET_KEY, AUTH } from 'src/constants';
 import { ErrorHelper, TokenHelper } from 'src/utils';
 
 @Injectable()
@@ -22,7 +22,7 @@ export class UserGuard implements CanActivate {
       const payload = TokenHelper.verify(accessToken, ACCESS_TOKEN_SECRET_KEY);
       return payload;
     } else {
-      ErrorHelper.UnauthorizedException('Unauthorized');
+      ErrorHelper.UnauthorizedException(AUTH.UNAUTHORIZED);
     }
   }
 }

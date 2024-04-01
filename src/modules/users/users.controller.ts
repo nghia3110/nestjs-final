@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 
+import { AdminGuard, UuidParam } from 'src/utils';
 import {
   CreateUserDto,
   ForgetPasswordDto,
@@ -21,7 +22,6 @@ import {
   VerifyOTPDto
 } from './dto';
 import { UsersService } from './users.service';
-import { AdminGuard, UuidParam } from 'src/utils';
 
 @ApiTags('users')
 @Controller('users')

@@ -10,6 +10,7 @@ import {
   MaxLength,
   MinLength
 } from 'class-validator';
+import { MAX_LENGTH_VALIDATE, MIN_LENGTH_VALIDATE, REQUIRED_VALIDATE } from 'src/constants';
 
 export class GetListUserDto {
   @IsOptional()
@@ -23,7 +24,7 @@ export class GetListUserDto {
 
 export class CreateUserDto {
   @IsString()
-  @IsNotEmpty({ message: "The firstname field is required!" })
+  @IsNotEmpty({ message: REQUIRED_VALIDATE('firstname') })
   @ApiProperty({
     type: String,
     description: 'First name',
@@ -32,7 +33,7 @@ export class CreateUserDto {
   firstName: string;
 
   @IsString()
-  @IsNotEmpty({ message: "The lastname field is required!" })
+  @IsNotEmpty({ message: REQUIRED_VALIDATE('lastname')  })
   @ApiProperty({
     type: String,
     description: 'Last name',
@@ -41,7 +42,7 @@ export class CreateUserDto {
   lastName: string;
 
   @IsString()
-  @IsNotEmpty({ message: "The phonenumber field is required!" })
+  @IsNotEmpty({ message: REQUIRED_VALIDATE('phonenumber')  })
   @IsNumberString()
   @ApiProperty({
     type: String,
@@ -51,9 +52,9 @@ export class CreateUserDto {
   phoneNumber: string;
 
   @IsString()
-  @MaxLength(32, { message: 'The Password field is less than 32 characters.' })
-  @MinLength(6, { message: 'The Password field is from 6 characters or more' })
-  @IsNotEmpty({ message: "The Password field is required!" })
+  @MaxLength(32, { message: MAX_LENGTH_VALIDATE('password', 32) })
+  @MinLength(6, { message: MIN_LENGTH_VALIDATE('password', 6) })
+  @IsNotEmpty({ message: REQUIRED_VALIDATE('password') })
   @ApiProperty({
     type: String,
     description: 'Password',
@@ -63,7 +64,7 @@ export class CreateUserDto {
 
   @IsEmail()
   @IsString()
-  @IsNotEmpty({message: "The Email field is required!"})
+  @IsNotEmpty({message: REQUIRED_VALIDATE('email')})
   @ApiProperty({
     type: String,
     description: 'Email',
@@ -80,5 +81,5 @@ export class UpdateUserDto extends OmitType(PartialType(CreateUserDto), ['passwo
     description: 'Set user is verified or not',
     example: true,
   })
-  isVerified: boolean;
+  isVerified?: boolean;
 }
