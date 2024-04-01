@@ -6,11 +6,7 @@ import {
   MaxLength,
   MinLength,
 } from 'class-validator';
-import {
-  MAX_LENGTH_VALIDATE,
-  MIN_LENGTH_VALIDATE,
-  REQUIRED_VALIDATE
-} from 'src/constants';
+import { MAX_LENGTH_VALIDATE, MIN_LENGTH_VALIDATE, REQUIRED_VALIDATE } from 'src/constants';
 
 export class LoginDto {
   @IsEmail()

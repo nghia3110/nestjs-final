@@ -2,12 +2,13 @@ import { BelongsToMany, Column, HasMany, Model, Table } from "sequelize-typescri
 import { Store } from "./stores.model";
 import { MethodDetail } from "./method-details.model";
 import { Rank } from "./ranks.model";
+import { BaseModel } from "../base.model";
 
 @Table({
     tableName: 'accumulate_methods',
     underscored: true
 })
-export class AccumulateMethod extends Model {
+export class AccumulateMethod extends BaseModel {
     @Column
     name: string;
 

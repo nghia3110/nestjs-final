@@ -2,12 +2,13 @@ import { BelongsToMany, Column, DataType, HasMany, Model, Table } from "sequeliz
 import { User } from "./users.model";
 import { MethodDetail } from "./method-details.model";
 import { AccumulateMethod } from "./accumulate-methods.model";
+import { BaseModel } from "../base.model";
 
 @Table({
     tableName: 'ranks',
     underscored: true
 })
-export class Rank extends Model {
+export class Rank extends BaseModel {
     @Column
     name: string;
 

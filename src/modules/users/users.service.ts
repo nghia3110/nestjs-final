@@ -1,10 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import md5 from 'md5';
 import moment from 'moment';
+
 import {
   ACCESS_TOKEN_EXPIRE_TIME,
   ACCESS_TOKEN_SECRET_KEY,
   APPLICATION,
+  ERank,
   HASH,
   OTP,
   OTP_TIME_EXPIRE,
@@ -20,16 +22,108 @@ import {
   SendEmailHelper,
   TokenHelper,
 } from 'src/utils/helpers';
-import { IToken } from 'src/interfaces';
+import { IHashResponse, ILoginResponse, IMessageResponse, IPaginationRes, IToken } from 'src/interfaces';
 
 import { LoginDto } from './dto/login.dto';
 import { UsersRepository } from './users.repository';
+import { CreateUserDto, GetListUserDto, UpdateUserDto } from './dto';
+import { Rank, User } from 'src/database';
+import { Op } from 'sequelize';
+import { RanksService } from '../ranks/ranks.service';
 
 @Injectable()
 export class UsersService {
-  constructor(private usersRepository: UsersRepository) {}
+  constructor(
+    private readonly usersRepository: UsersRepository,
+    private readonly ranksService: RanksService) { }
 
-  async login(body: LoginDto): Promise<object> {
+  async getListUsers(paginateInfo: GetListUserDto): Promise<IPaginationRes<User>> {
+    const { page, limit } = paginateInfo;
+    return this.usersRepository.paginate(parseInt(page), parseInt(limit), {
+      include: [{
+        model: Rank,
+        as: 'rank'
+      }],
+      attributes: { exclude: ['password', 'rankId'] },
+      raw: false,
+      nest: true
+    });
+  }
+
+  async getUserById(id: string): Promise<User> {
+    const user = await this.usersRepository.findOne({
+      where: {
+        id
+      },
+      include: [{
+        model: Rank,
+        as: 'rank'
+      }],
+      attributes: { exclude: ['password', 'rankId'] },
+      raw: false,
+      nest: true
+    });
+    if (!user) {
+      ErrorHelper.BadRequestException(USER.USER_NOT_FOUND);
+    }
+    return user;
+  }
+
+  async checkConflictInfo(email: string, phoneNumber: string): Promise<void> {
+    const user = await this.usersRepository.findOne({
+      where: {
+        [Op.or]: {
+          phoneNumber: phoneNumber,
+          email: email
+        }
+      }
+    });
+
+    if (user) {
+      ErrorHelper.BadRequestException(USER.CONFLICT);
+    }
+  }
+
+  async createUser(body: CreateUserDto): Promise<User> {
+    await this.checkConflictInfo(body.email, body.phoneNumber);
+
+    const rank = await this.ranksService.findByName(ERank.BRONZE);
+
+    const hashPassword = await EncryptHelper.hash(body.password);
+
+    return this.usersRepository.create(
+      {
+        ...body,
+        password: hashPassword,
+        isVerified: true,
+        rankId: rank.id
+      })
+  }
+
+  async updateUser(id: string, body: UpdateUserDto): Promise<User[]> {
+    const user = await this.getUserById(id);
+
+    if ((body.email && body.email !== user.email)
+      || (body.phoneNumber && body.phoneNumber !== user.phoneNumber)) {
+      await this.checkConflictInfo(body.email, body.phoneNumber);
+    }
+
+    return this.usersRepository.update(body, { where: { id } });
+  }
+
+  async deleteUser(id: string): Promise<IMessageResponse> {
+    await this.getUserById(id);
+
+    const deleteResult = await this.usersRepository.delete({ where: { id } });
+    if (deleteResult <= 0) {
+      ErrorHelper.BadRequestException(USER.DELETE_FAILED);
+    }
+    return {
+      message: USER.DELETE_SUCCESS
+    }
+  }
+
+  async login(body: LoginDto): Promise<ILoginResponse<User>> {
     const { password, email } = body;
 
     const user = await this.usersRepository.findOne({
@@ -48,11 +142,16 @@ export class UsersService {
     if (!isValidPassword)
       ErrorHelper.BadRequestException(USER.INVALID_PASSWORD);
 
-    const token = this.generateToken({ id: user.id });
+    const token = this.generateToken(
+      {
+        id: user.id,
+        isAdmin: user.isAdmin
+      }
+    );
     delete user.password;
     return {
-      ...token,
-      user,
+      token,
+      item: user,
     };
   }
 
@@ -75,18 +174,16 @@ export class UsersService {
     };
   }
 
-  async sendOTP(email: string, hash: string): Promise<string> {
+  async sendOTP(email: string, hash: string): Promise<IHashResponse> {
     const checkHash = md5(
       email + SECRET_KEY_SEND_GMAIL + moment().format('DD/MM/YYYY'),
     );
-    console.log('check-hash: ', checkHash);
 
     if (checkHash !== hash) {
       ErrorHelper.InternalServerErrorException(APPLICATION.HASH_IS_NOT_CORRECT);
     }
 
     const OTP = CommonHelper.generateOTP();
-    console.log('OTP: ', OTP);
     SendEmailHelper.sendOTP({
       to: email,
       subject: 'Confirm OTP',
@@ -101,10 +198,12 @@ export class UsersService {
         isVerified: false,
       }),
     );
-    return hashCode;
+    return {
+      hash: hashCode
+    };
   }
 
-  async verifyOTP(otp: string, hash: string): Promise<string> {
+  async verifyOTP(otp: string, hash: string): Promise<IHashResponse> {
     const checkHashInfo = CommonHelper.checkHashData(hash);
     if (!checkHashInfo) {
       ErrorHelper.BadRequestException(APPLICATION.VERIFY_FAIL);
@@ -127,7 +226,9 @@ export class UsersService {
       }),
     );
 
-    return hashCode;
+    return {
+      hash: hashCode
+    };
   }
 
   async forgetPassword(newPassword: string, hash: string): Promise<boolean> {

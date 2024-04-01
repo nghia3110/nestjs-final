@@ -35,7 +35,7 @@ export class SendEmailHelper {
 
   static async sendOTP({ to, subject, OTP }): Promise<string> {
     const hbsTemplate = hbs.create();
-    const content = await hbsTemplate.render(join(__dirname, '../../src/views/send-otp.hbs'), {
+    const content = await hbsTemplate.render(join(__dirname, '../../views/send-otp.hbs'), {
       otp: OTP,
     });
     return this.sendMail(to, subject, content);

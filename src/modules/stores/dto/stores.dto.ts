@@ -7,12 +7,13 @@ import {
   IsNumberString,
   IsOptional,
   IsString,
+  IsUUID,
   MaxLength,
   MinLength
 } from 'class-validator';
 import { MAX_LENGTH_VALIDATE, MIN_LENGTH_VALIDATE, REQUIRED_VALIDATE } from 'src/constants';
 
-export class GetListUserDto {
+export class GetListStoresDto {
   @IsOptional()
   @IsNumberString()
   page?: string;
@@ -22,34 +23,25 @@ export class GetListUserDto {
   limit?: string;
 }
 
-export class CreateUserDto {
+export class CreateStoreDto {
   @IsString()
-  @IsNotEmpty({ message: REQUIRED_VALIDATE('firstname') })
+  @IsNotEmpty({ message: REQUIRED_VALIDATE('store name') })
   @ApiProperty({
     type: String,
-    description: 'First name',
-    example: 'Nghia',
+    description: 'Store name',
+    example: 'Store 1',
   })
-  firstName: string;
+  name: string;
 
+  @IsEmail()
   @IsString()
-  @IsNotEmpty({ message: REQUIRED_VALIDATE('lastname')  })
+  @IsNotEmpty({ message: REQUIRED_VALIDATE('email') })
   @ApiProperty({
     type: String,
-    description: 'Last name',
-    example: 'Ha',
+    description: 'Email',
+    example: 'example@gmail.com'
   })
-  lastName: string;
-
-  @IsString()
-  @IsNotEmpty({ message: REQUIRED_VALIDATE('phonenumber')  })
-  @IsNumberString()
-  @ApiProperty({
-    type: String,
-    description: 'Phone number',
-    example: '0913289351'
-  })
-  phoneNumber: string;
+  email: string;
 
   @IsString()
   @MaxLength(32, { message: MAX_LENGTH_VALIDATE('password', 32) })
@@ -62,24 +54,49 @@ export class CreateUserDto {
   })
   password: string;
 
-  @IsEmail()
   @IsString()
-  @IsNotEmpty({message: REQUIRED_VALIDATE('email')})
   @ApiProperty({
     type: String,
-    description: 'Email',
-    example: 'example@gmail.com'
+    description: 'Address',
+    example: 'Hanoi'
   })
-  email: string;
+  address: string;
+
+  @IsString()
+  @IsNumberString()
+  @ApiProperty({
+    type: String,
+    description: 'Phone number',
+    example: '0913289351'
+  })
+  phoneNumber: string;
+
+  @IsUUID()
+  @IsString()
+  @IsNotEmpty({ message: REQUIRED_VALIDATE('method') })
+  @ApiProperty({
+    type: String,
+    description: 'Accumulate method',
+  })
+  methodId: string;
 }
 
-export class UpdateUserDto extends OmitType(PartialType(CreateUserDto), ['password'] as const) {
+export class UpdateStoreDto extends OmitType(PartialType(CreateStoreDto), ['password'] as const) {
   @IsBoolean()
   @IsOptional()
   @ApiProperty({
     type: Boolean,
-    description: 'Set user is verified or not',
+    description: 'Set store is verified or not',
     example: true,
   })
   isVerified?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  @ApiProperty({
+    type: Boolean,
+    description: 'Set store is approved',
+    example: true,
+  })
+  isApproved?: boolean;
 }

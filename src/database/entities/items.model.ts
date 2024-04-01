@@ -3,12 +3,13 @@ import { Store } from "./stores.model";
 import { RedeemItem } from "./redeem-items.model";
 import { Order } from "./orders.model";
 import { OrderDetail } from "./order-details.model";
+import { BaseModel } from "../base.model";
 
 @Table({
     tableName: 'items',
     underscored: true
 })
-export class Item extends Model {
+export class Item extends BaseModel {
     @Column
     name: string;
 
