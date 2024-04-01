@@ -91,7 +91,7 @@ export class UsersService {
 
     const hashPassword = await EncryptHelper.hash(body.password);
 
-    return await this.usersRepository.create(
+    return this.usersRepository.create(
       {
         ...body,
         password: hashPassword,
@@ -108,7 +108,7 @@ export class UsersService {
       await this.checkConflictInfo(body.email, body.phoneNumber);
     }
 
-    return await this.usersRepository.update(body, { where: { id } });
+    return this.usersRepository.update(body, { where: { id } });
   }
 
   async deleteUser(id: string): Promise<IMessageResponse> {

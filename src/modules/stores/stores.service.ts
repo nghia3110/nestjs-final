@@ -100,7 +100,7 @@ export class StoresService {
 
         const hashPassword = await EncryptHelper.hash(body.password);
 
-        return await this.storesRepository.create(
+        return this.storesRepository.create(
             {
                 ...body,
                 password: hashPassword,
@@ -120,7 +120,7 @@ export class StoresService {
             await this.methodsService.findById(body.methodId);
         }
 
-        return await this.storesRepository.update(body, { where: { id } });
+        return this.storesRepository.update(body, { where: { id } });
     }
 
     async deleteStore(id: string): Promise<IMessageResponse> {
