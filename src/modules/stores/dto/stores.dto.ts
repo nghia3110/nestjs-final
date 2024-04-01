@@ -89,7 +89,7 @@ export class UpdateStoreDto extends OmitType(PartialType(CreateStoreDto), ['pass
     description: 'Set store is verified or not',
     example: true,
   })
-  isVerified: boolean;
+  isVerified?: boolean;
 
   @IsBoolean()
   @IsOptional()
@@ -98,5 +98,5 @@ export class UpdateStoreDto extends OmitType(PartialType(CreateStoreDto), ['pass
     description: 'Set store is approved',
     example: true,
   })
-  isApproved: boolean;
+  isApproved?: boolean;
 }
