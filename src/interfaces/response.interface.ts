@@ -1,3 +1,5 @@
+import { IToken } from "./token.interfaces";
+
 export interface IResponse {
   data?: any;
   success: boolean;
@@ -11,4 +13,23 @@ export interface IPaginationRes<T> {
   total: number;
   page: number;
   limit: number;
+}
+
+export interface IMessageResponse {
+  message: string;
+}
+
+export interface IHashResponse {
+  hash: string;
+}
+
+export interface ILoginResponse<T> {
+  token: IToken,
+  item: T
+}
+
+export interface IVerifyOTPResponse {
+  email?: string;
+  phoneNumber?: string;
+  isVerified: boolean;
 }

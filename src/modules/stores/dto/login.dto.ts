@@ -6,11 +6,12 @@ import {
   MaxLength,
   MinLength,
 } from 'class-validator';
+import { MAX_LENGTH_VALIDATE, MIN_LENGTH_VALIDATE, REQUIRED_VALIDATE } from 'src/constants';
 
 export class LoginDto {
   @IsEmail()
   @IsString()
-  @IsNotEmpty({ message: 'The Email field is required!' })
+  @IsNotEmpty({ message: REQUIRED_VALIDATE('email') })
   @ApiProperty({
     type: String,
     description: 'Your email',
@@ -18,10 +19,10 @@ export class LoginDto {
   })
   email: string;
 
-  @MaxLength(32, { message: 'The Password field is less than 32 characters.' })
-  @MinLength(6, { message: 'The Password field is from 6 characters or more' })
   @IsString()
-  @IsNotEmpty({ message: 'This Password field is required' })
+  @MaxLength(32, { message: MAX_LENGTH_VALIDATE('password', 32) })
+  @MinLength(6, { message: MIN_LENGTH_VALIDATE('password', 6) })
+  @IsNotEmpty({ message: REQUIRED_VALIDATE('password') })
   @ApiProperty({
     type: String,
     description: 'Your password',

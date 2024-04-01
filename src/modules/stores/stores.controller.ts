@@ -11,15 +11,15 @@ import {
 } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 
+import { AdminGuard, UuidParam } from 'src/utils';
 import {
     CreateStoreDto,
     GetListStoresDto,
     UpdateStoreDto,
 } from './dto';
-import { StoresService } from './stores.service';
-import { AdminGuard, UuidParam } from 'src/utils';
-import { SendOTPDto, VerifyOTPDto } from './dto/otp.dto';
 import { LoginDto } from './dto/login.dto';
+import { SendOTPDto, VerifyOTPDto } from './dto/otp.dto';
+import { StoresService } from './stores.service';
 
 @ApiTags('stores')
 @Controller('stores')
@@ -81,7 +81,7 @@ export class StoresController {
 
     @ApiOperation({ summary: 'API approve store' })
     @UseGuards(AdminGuard)
-    @Put('approve/:id')
+    @Put('/approve/:id')
     @HttpCode(201)
     async approveStore(@UuidParam('id') id: string) {
         return await this.storesService.approveStore(id);
@@ -93,7 +93,7 @@ export class StoresController {
         required: true,
         description: 'Login store'
     })
-    @Post("login")
+    @Post("/login")
     @HttpCode(201)
     async login(@Body() payload: LoginDto) {
         return await this.storesService.login(payload);
@@ -105,7 +105,7 @@ export class StoresController {
         required: true,
         description: 'Register store'
     })
-    @Post("register")
+    @Post("/register")
     @HttpCode(201)
     async register(@Body() payload: CreateStoreDto) {
         return await this.storesService.register(payload);
@@ -122,9 +122,7 @@ export class StoresController {
     async sendOtp(@Body() payload: SendOTPDto) {
         const { email, hash } = payload;
         const result = await this.storesService.sendOTP(email, hash);
-        return {
-            hash: result,
-        };
+        return result;
     }
 
     @ApiOperation({ summary: 'API verify OTP' })

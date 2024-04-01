@@ -1,15 +1,38 @@
 import { Injectable } from "@nestjs/common";
-import moment from "moment";
 import md5 from 'md5';
+import moment from "moment";
 
-import { StoresRepository } from "./stores.repository";
-import { IPaginationRes, IToken } from "src/interfaces";
+import {
+    ACCESS_TOKEN_EXPIRE_TIME,
+    ACCESS_TOKEN_SECRET_KEY,
+    APPLICATION, EMAIL,
+    OTP,
+    OTP_TIME_EXPIRE,
+    REFRESH_TOKEN_EXPIRE_TIME,
+    REFRESH_TOKEN_SECRET_KEY,
+    SECRET_KEY_SEND_GMAIL,
+    STORE
+} from "src/constants";
 import { AccumulateMethod, Store } from "src/database";
-import { CreateStoreDto, GetListStoresDto, UpdateStoreDto } from "./dto";
-import { CommonHelper, EncryptHelper, ErrorHelper, SendEmailHelper, TokenHelper } from "src/utils";
-import { ACCESS_TOKEN_EXPIRE_TIME, ACCESS_TOKEN_SECRET_KEY, APPLICATION, EMAIL, OTP, OTP_TIME_EXPIRE, REFRESH_TOKEN_EXPIRE_TIME, REFRESH_TOKEN_SECRET_KEY, SECRET_KEY_SEND_GMAIL, STORE } from "src/constants";
+import {
+    IHashResponse,
+    ILoginResponse,
+    IMessageResponse,
+    IPaginationRes,
+    IToken,
+    IVerifyOTPResponse
+} from "src/interfaces";
+import {
+    CommonHelper,
+    EncryptHelper,
+    ErrorHelper,
+    SendEmailHelper,
+    TokenHelper
+} from "src/utils";
 import { MethodsService } from "../methods/methods.service";
+import { CreateStoreDto, GetListStoresDto, UpdateStoreDto } from "./dto";
 import { LoginDto } from "./dto/login.dto";
+import { StoresRepository } from "./stores.repository";
 
 @Injectable()
 export class StoresService {
@@ -32,7 +55,7 @@ export class StoresService {
     }
 
     async getStoreById(id: string): Promise<Store> {
-        return await this.storesRepository.findOne({
+        const store = await this.storesRepository.findOne({
             where: {
                 id
             },
@@ -40,26 +63,40 @@ export class StoresService {
                 model: AccumulateMethod,
                 as: 'method'
             }],
-            attributes: { exclude: ['password', 'methodId'] },
+            attributes: { exclude: ['password'] },
             raw: false,
             nest: true
         });
+        if (!store) {
+            ErrorHelper.BadRequestException(STORE.STORE_NOT_FOUND);
+        }
+        return store;
+    }
+
+    async getStoreByEmail(email: string): Promise<Store> {
+        const store = await this.storesRepository.findOne({
+            where: { email }
+        });
+        if(!store) {
+            ErrorHelper.BadRequestException(STORE.STORE_NOT_FOUND);
+        }
+        return store;
+    }
+
+    async checkExistEmail(email: string): Promise<void> {
+        const store = await this.storesRepository.findOne({
+            where: { email }
+        });
+
+        if(store) {
+            ErrorHelper.BadRequestException(EMAIL.EMAIL_EXIST);
+        }
     }
 
     async createStore(body: CreateStoreDto): Promise<Store> {
-        const store = await this.storesRepository.findOne({
-            where: {
-                email: body.email
-            }
-        });
-        if (store) {
-            ErrorHelper.ConflictException(EMAIL.EMAIL_EXIST);
-        }
+        await this.checkExistEmail(body.email);
 
-        const method = await this.methodsService.findById(body.methodId);
-        if (!method) {
-            ErrorHelper.NotFoundException(STORE.METHOD_NOT_FOUND);
-        }
+        await this.methodsService.findById(body.methodId);
 
         const hashPassword = await EncryptHelper.hash(body.password);
 
@@ -73,75 +110,43 @@ export class StoresService {
     }
 
     async updateStore(id: string, body: UpdateStoreDto): Promise<Store[]> {
-        const store = await this.storesRepository.findOne({
-            where: {
-                id
-            }
-        });
-        if (!store) {
-            ErrorHelper.BadRequestException(STORE.STORE_NOT_FOUND);
-        }
+        const store = await this.getStoreById(id);
 
         if (body.email && body.email !== store.email) {
-            const findStore = await this.storesRepository.findOne({
-                where: {
-                    email: body.email
-                }
-            });
-            if (findStore) {
-                ErrorHelper.ConflictException(EMAIL.EMAIL_EXIST);
-            }
+            await this.checkExistEmail(body.email);
         }
 
         if (body.methodId && body.methodId !== store.methodId) {
-            const method = await this.methodsService.findById(body.methodId);
-            if (!method) {
-                ErrorHelper.NotFoundException(STORE.METHOD_NOT_FOUND);
-            }
+            await this.methodsService.findById(body.methodId);
         }
 
         return await this.storesRepository.update(body, { where: { id } });
     }
 
-    async deleteStore(id: string): Promise<number> {
-        const store = await this.storesRepository.findOne({
-            where: {
-                id
-            }
-        });
+    async deleteStore(id: string): Promise<IMessageResponse> {
+        await this.getStoreById(id);
 
-        if (!store) {
-            ErrorHelper.BadRequestException(STORE.STORE_NOT_FOUND);
+        const deleteResult = await this.storesRepository.delete({ where: { id } });
+
+        if(deleteResult <= 0) {
+            ErrorHelper.BadRequestException(STORE.DELETE_FAILED);
         }
 
-        return await this.storesRepository.delete({ where: { id } });
+        return {
+            message: STORE.DELETE_SUCCESS
+        }
     }
 
     async approveStore(id: string): Promise<Store[]> {
-        const store = await this.storesRepository.findOne({
-            where: { id }
-        });
-        if (!store) {
-            ErrorHelper.NotFoundException(STORE.STORE_NOT_FOUND);
-        }
+        await this.getStoreById(id);
 
         return this.storesRepository.update({ isApproved: true }, { where: { id } });
     }
 
-    async register(body: CreateStoreDto): Promise<string> {
-        const store = await this.storesRepository.findOne({
-            where: {
-                email: body.email
-            }
-        });
-        if (store) {
-            ErrorHelper.ConflictException(EMAIL.EMAIL_EXIST);
-        }
+    async register(body: CreateStoreDto): Promise<IHashResponse> {
+        await this.checkExistEmail(body.email);
 
-        const method = await this.methodsService.findById(body.methodId);
-        if (!method) {
-            ErrorHelper.NotFoundException(STORE.METHOD_NOT_FOUND);
-        }
+        await this.methodsService.findById(body.methodId);
 
         const hashPassword = await EncryptHelper.hash(body.password);
 
@@ -155,21 +160,15 @@ export class StoresService {
             newStore.email + SECRET_KEY_SEND_GMAIL
         );
 
-        return hashCode;
+        return {
+            hash: hashCode
+        };
     }
 
-    async login(body: LoginDto): Promise<object> {
+    async login(body: LoginDto): Promise<ILoginResponse<Store>> {
         const { password, email } = body;
 
-        const store = await this.storesRepository.findOne({
-            where: {
-                email
-            },
-        });
-
-        if (!store) {
-            ErrorHelper.BadRequestException(STORE.STORE_NOT_FOUND);
-        }
+        const store = await this.getStoreByEmail(email);
 
         const isValidPassword = await EncryptHelper.compare(
             password,
@@ -193,8 +192,8 @@ export class StoresService {
         );
         delete store.password;
         return {
-            ...token,
-            store,
+            token,
+            item: store,
         };
     }
 
@@ -217,7 +216,7 @@ export class StoresService {
         };
     }
 
-    async sendOTP(email: string, hash: string): Promise<string> {
+    async sendOTP(email: string, hash: string): Promise<IHashResponse> {
         const checkHash = md5(
             email + SECRET_KEY_SEND_GMAIL,
         );
@@ -241,10 +240,12 @@ export class StoresService {
                 isVerified: false,
             }),
         );
-        return hashCode;
+        return {
+            hash: hashCode
+        };
     }
 
-    async verifyOTP(otp: string, hash: string): Promise<object> {
+    async verifyOTP(otp: string, hash: string): Promise<IVerifyOTPResponse> {
         const checkHashInfo = CommonHelper.checkHashData(hash);
         if (!checkHashInfo) {
             ErrorHelper.BadRequestException(APPLICATION.VERIFY_FAIL);
@@ -259,14 +260,7 @@ export class StoresService {
             ErrorHelper.InternalServerErrorException(OTP.OTP_INVALID);
         }
 
-        const store = await this.storesRepository.findOne({
-            where: {
-                email: hashInfo.email
-            }
-        });
-        if (!store) {
-            ErrorHelper.NotFoundException(STORE.STORE_NOT_FOUND);
-        }
+        await this.getStoreByEmail(hashInfo.email);
 
         await this.storesRepository.update(
             { isVerified: true },
