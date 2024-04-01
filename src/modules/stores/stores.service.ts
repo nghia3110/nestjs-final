@@ -5,6 +5,7 @@ import moment from "moment";
 import {
     ACCESS_TOKEN_EXPIRE_TIME,
     ACCESS_TOKEN_SECRET_KEY,
+    AMOUNT_INCREASE_POINT,
     APPLICATION, EMAIL,
     OTP,
     OTP_TIME_EXPIRE,
@@ -13,7 +14,7 @@ import {
     SECRET_KEY_SEND_GMAIL,
     STORE
 } from "src/constants";
-import { AccumulateMethod, Store } from "src/database";
+import { AccumulateMethod, GetListDto, Store, User } from "src/database";
 import {
     IHashResponse,
     ILoginResponse,
@@ -30,18 +31,25 @@ import {
     TokenHelper
 } from "src/utils";
 import { MethodsService } from "../methods/methods.service";
-import { CreateStoreDto, GetListStoresDto, UpdateStoreDto } from "./dto";
+import { CreateStoreDto, UpdateStoreDto } from "./dto";
 import { LoginDto } from "./dto/login.dto";
 import { StoresRepository } from "./stores.repository";
+import { TStore } from "src/types";
+import { UsersService } from "../users/users.service";
+import { OrdersService } from "../orders/orders.service";
+import { MethodDetailsService } from "../methoddetails/method-details.service";
 
 @Injectable()
 export class StoresService {
     constructor(
         private readonly storesRepository: StoresRepository,
-        private readonly methodsService: MethodsService
+        private readonly methodsService: MethodsService,
+        private readonly usersService: UsersService,
+        private readonly ordersService: OrdersService,
+        private readonly methodDetailsService: MethodDetailsService
     ) { }
 
-    async getListStores(paginateInfo: GetListStoresDto): Promise<IPaginationRes<Store>> {
+    async getListStores(paginateInfo: GetListDto): Promise<IPaginationRes<Store>> {
         const { page, limit } = paginateInfo;
         return this.storesRepository.paginate(parseInt(page), parseInt(limit), {
             include: [{
@@ -77,7 +85,7 @@ export class StoresService {
         const store = await this.storesRepository.findOne({
             where: { email }
         });
-        if(!store) {
+        if (!store) {
             ErrorHelper.BadRequestException(STORE.STORE_NOT_FOUND);
         }
         return store;
@@ -88,7 +96,7 @@ export class StoresService {
             where: { email }
         });
 
-        if(store) {
+        if (store) {
             ErrorHelper.BadRequestException(EMAIL.EMAIL_EXIST);
         }
     }
@@ -128,7 +136,7 @@ export class StoresService {
 
         const deleteResult = await this.storesRepository.delete({ where: { id } });
 
-        if(deleteResult <= 0) {
+        if (deleteResult <= 0) {
             ErrorHelper.BadRequestException(STORE.DELETE_FAILED);
         }
 
@@ -141,6 +149,33 @@ export class StoresService {
         await this.getStoreById(id);
 
         return this.storesRepository.update({ isApproved: true }, { where: { id } });
+    }
+
+    async getAllUsersInStore(paginateInfo: GetListDto, store: TStore): Promise<IPaginationRes<User>> {
+        return this.usersService.getUsersByStore(store.id, paginateInfo);
+    }
+
+    // Hàm này em viết chưa xong
+    async calculatePoints(orderId: string): Promise<void> {
+        const orderAmount = await this.ordersService.calcOrderAmount(orderId);
+        const user = orderAmount.order.user;
+        const store = orderAmount.order.store;
+        const amount = orderAmount.totalAmount;
+
+        const methodDetail = await this.methodDetailsService.getMethodDetail(store.methodId, user.rankId);
+        let bonusPoints: number;
+
+        if (methodDetail.fixedPoint > 0) {
+            bonusPoints = (amount / AMOUNT_INCREASE_POINT) * methodDetail.fixedPoint;
+        } else {
+            if (amount < AMOUNT_INCREASE_POINT) {
+                bonusPoints = Math.min(methodDetail.maxPoint, (amount * 0.001) * (methodDetail.percentage / 100));
+            } else {
+                const r = amount / AMOUNT_INCREASE_POINT;
+                bonusPoints = methodDetail.maxPoint * r +
+                    Math.min(methodDetail.maxPoint, ((amount - r * AMOUNT_INCREASE_POINT) * 0.001) * (methodDetail.percentage / 100));
+            }
+        }
     }
 
     async register(body: CreateStoreDto): Promise<IHashResponse> {
@@ -188,6 +223,7 @@ export class StoresService {
         const token = this.generateToken(
             {
                 id: store.id,
+                isStore: true
             }
         );
         delete store.password;

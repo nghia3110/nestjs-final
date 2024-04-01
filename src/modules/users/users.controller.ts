@@ -15,13 +15,13 @@ import { AdminGuard, UuidParam } from 'src/utils';
 import {
   CreateUserDto,
   ForgetPasswordDto,
-  GetListUserDto,
   LoginDto,
   SendOTPDto,
   UpdateUserDto,
   VerifyOTPDto
 } from './dto';
 import { UsersService } from './users.service';
+import { GetListDto } from 'src/database';
 
 @ApiTags('users')
 @Controller('users')
@@ -35,7 +35,7 @@ export class UsersController {
   async getListUsers(
     @Query('page') page?: string,
     @Query('limit') limit?: string) {
-    const paginateInfo = { page, limit } as GetListUserDto;
+    const paginateInfo = { page, limit } as GetListDto;
     return await this.usersService.getListUsers(paginateInfo);
   }
 

@@ -11,10 +11,11 @@ import {
 } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 
-import { AdminGuard, UuidParam } from 'src/utils';
+import { GetListDto } from 'src/database';
+import { TStore } from 'src/types';
+import { AdminGuard, Store, StoreGuard, UuidParam } from 'src/utils';
 import {
     CreateStoreDto,
-    GetListStoresDto,
     UpdateStoreDto,
 } from './dto';
 import { LoginDto } from './dto/login.dto';
@@ -33,7 +34,7 @@ export class StoresController {
     async getListStores(
         @Query('page') page?: string,
         @Query('limit') limit?: string) {
-        const paginateInfo = { page, limit } as GetListStoresDto;
+        const paginateInfo = { page, limit } as GetListDto;
         return await this.storesService.getListStores(paginateInfo);
     }
 
@@ -86,6 +87,19 @@ export class StoresController {
     async approveStore(@UuidParam('id') id: string) {
         return await this.storesService.approveStore(id);
     }
+
+    @ApiOperation({ summary: 'API get store by Id' })
+    @UseGuards(StoreGuard)
+    @Get('/users')
+    @HttpCode(200)
+    async getUsersInStore(
+        @Store() store: TStore,
+        @Query('page') page?: string,
+        @Query('limit') limit?: string,
+    ) {
+        const paginateInfo = { page, limit } as GetListDto;
+        return await this.storesService.getAllUsersInStore(paginateInfo, store);
+    }   
 
     @ApiOperation({ summary: 'API login store' })
     @ApiBody({

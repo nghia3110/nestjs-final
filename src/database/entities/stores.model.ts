@@ -2,6 +2,7 @@ import { BelongsTo, Column, DataType, ForeignKey, HasMany, Model, Table } from "
 import { AccumulateMethod } from "./accumulate-methods.model";
 import { Item } from "./items.model";
 import { BaseModel } from "../base.model";
+import { Order } from "./orders.model";
 
 @Table({
     tableName: 'stores',
@@ -44,4 +45,7 @@ export class Store extends BaseModel {
 
     @HasMany(() => Item)
     items: Item[];
+
+    @HasMany(() => Order)
+    orders: Order[];
 }

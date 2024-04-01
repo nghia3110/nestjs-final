@@ -1,3 +1,4 @@
+import { Order } from "src/database";
 import { IToken } from "./token.interfaces";
 
 export interface IResponse {
@@ -32,4 +33,9 @@ export interface IVerifyOTPResponse {
   email?: string;
   phoneNumber?: string;
   isVerified: boolean;
+}
+
+export interface IOrderAmount {
+  order: Order,
+  totalAmount: number
 }

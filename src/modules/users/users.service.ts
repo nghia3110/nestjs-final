@@ -26,18 +26,20 @@ import { IHashResponse, ILoginResponse, IMessageResponse, IPaginationRes, IToken
 
 import { LoginDto } from './dto/login.dto';
 import { UsersRepository } from './users.repository';
-import { CreateUserDto, GetListUserDto, UpdateUserDto } from './dto';
-import { Rank, User } from 'src/database';
+import { CreateUserDto, UpdateUserDto } from './dto';
+import { GetListDto, Order, Rank, User } from 'src/database';
 import { Op } from 'sequelize';
 import { RanksService } from '../ranks/ranks.service';
-
+import { OrdersService } from '../orders/orders.service';
 @Injectable()
 export class UsersService {
   constructor(
     private readonly usersRepository: UsersRepository,
-    private readonly ranksService: RanksService) { }
+    private readonly ranksService: RanksService,
+    private readonly ordersService: OrdersService
+  ) { }
 
-  async getListUsers(paginateInfo: GetListUserDto): Promise<IPaginationRes<User>> {
+  async getListUsers(paginateInfo: GetListDto): Promise<IPaginationRes<User>> {
     const { page, limit } = paginateInfo;
     return this.usersRepository.paginate(parseInt(page), parseInt(limit), {
       include: [{
@@ -121,6 +123,26 @@ export class UsersService {
     return {
       message: USER.DELETE_SUCCESS
     }
+  }
+
+  async getUsersByStore(storeId: string, paginateInfo: GetListDto): Promise<IPaginationRes<User>> {
+    const orders = await this.ordersService.getOrdersByStore(storeId);
+
+    const userIds = orders.map(order => order.userId);
+
+    const { page, limit } = paginateInfo;
+    return this.usersRepository.paginate(parseInt(page), parseInt(limit), {
+      where: {
+        id: { userIds }
+      },
+      include: [{
+        model: Rank,
+        as: 'rank'
+      }],
+      attributes: { exclude: ['password', 'rankId'] },
+      raw: false,
+      nest: true
+    });
   }
 
   async login(body: LoginDto): Promise<ILoginResponse<User>> {

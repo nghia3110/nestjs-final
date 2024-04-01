@@ -12,16 +12,6 @@ import {
 } from 'class-validator';
 import { MAX_LENGTH_VALIDATE, MIN_LENGTH_VALIDATE, REQUIRED_VALIDATE } from 'src/constants';
 
-export class GetListUserDto {
-  @IsOptional()
-  @IsNumberString()
-  page?: string;
-
-  @IsOptional()
-  @IsNumberString()
-  limit?: string;
-}
-
 export class CreateUserDto {
   @IsString()
   @IsNotEmpty({ message: REQUIRED_VALIDATE('firstname') })

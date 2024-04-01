@@ -3,6 +3,7 @@ import { User } from "./users.model";
 import { OrderDetail } from "./order-details.model";
 import { Item } from "./items.model";
 import { BaseModel } from "../base.model";
+import { Store } from "./stores.model";
 
 @Table({
     tableName: 'orders',
@@ -18,8 +19,17 @@ export class Order extends BaseModel {
     })
     userId: string;
 
+    @ForeignKey(() => Store)
+    @Column({
+        type: DataType.UUID
+    })
+    storeId: string;
+
     @BelongsTo(() => User)
     user: User;
+
+    @BelongsTo(() => Store)
+    store: Store;
 
     @BelongsToMany(() => Item, () => OrderDetail)
     items: Item[];

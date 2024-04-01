@@ -23,11 +23,6 @@ export class MethodDetail extends BaseModel {
     })
     percentage: number;
 
-    @Column({
-        type: DataType.DOUBLE
-    })
-    maxPurchaseAmount: number;
-
     @ForeignKey(() => AccumulateMethod)
     @Column({
         type: DataType.UUID
@@ -39,4 +34,10 @@ export class MethodDetail extends BaseModel {
         type: DataType.UUID
     })
     rankId: string;
+
+    @BelongsTo(() => AccumulateMethod)
+    method: AccumulateMethod;
+
+    @BelongsTo(() => Rank)
+    rank: Rank;
 }
