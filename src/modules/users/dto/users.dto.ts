@@ -4,6 +4,7 @@ import {
   IsBoolean,
   IsEmail,
   IsNotEmpty,
+  IsNumber,
   IsNumberString,
   IsOptional,
   IsString,
@@ -72,4 +73,12 @@ export class UpdateUserDto extends OmitType(PartialType(CreateUserDto), ['passwo
     example: true,
   })
   isVerified?: boolean;
+
+  @IsNumber()
+  @IsOptional()
+  totalPoints?: number;
+
+  @IsNumber()
+  @IsOptional()
+  currentPoints?: number;
 }

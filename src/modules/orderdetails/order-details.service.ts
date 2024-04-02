@@ -1,5 +1,5 @@
-import { Injectable } from "@nestjs/common";
-import { ORDER_DETAIL } from "src/constants";
+import { Inject, Injectable, forwardRef } from "@nestjs/common";
+import { EStatus, ORDER_DETAIL } from "src/constants";
 import { GetListDto, Item, OrderDetail, User } from "src/database";
 import { IMessageResponse, IPaginationRes } from "src/interfaces";
 import { ErrorHelper } from "src/utils";
@@ -14,7 +14,9 @@ import { UpdateItemQuantityDto } from "../items/dto";
 export class OrderDetailsService {
     constructor(
         private readonly orderDetailsRepository: OrderDetailsRepository,
+        @Inject(forwardRef(() => OrdersService))
         private readonly ordersService: OrdersService,
+        @Inject(forwardRef(() => ItemsService))
         private readonly itemsService: ItemsService
     ) { }
 
@@ -70,10 +72,10 @@ export class OrderDetailsService {
             id: detail.itemId,
             quantityInStock: Sequelize.literal(`quantityInStock - ${detail.quantityOrdered}`)
         } as UpdateItemQuantityDto));
-        
-          await this.itemsService.bulkCreateItems(updatedItemsData, {
+
+        await this.itemsService.bulkCreateItems(updatedItemsData, {
             updateOnDuplicate: ["quantityInStock"]
-          });
+        });
     }
 
     async createOrderDetail(body: CreateOrderDetailDto): Promise<OrderDetail> {
@@ -119,14 +121,16 @@ export class OrderDetailsService {
         }
     }
 
-    async deleteManyOrderDetails(ids: string[]): Promise<void> {
-        const deleteResult = await this.orderDetailsRepository.delete({
-            where: {
-                id: { ids }
+    async updateStatusOrderDetails(ids: string[]): Promise<void> {
+        await this.orderDetailsRepository.update(
+            {
+                status: EStatus.SUCCESS
+            },
+            {
+                where: {
+                    id: { ids }
+                }
             }
-        });
-        if(deleteResult <= 0) {
-            ErrorHelper.BadRequestException(ORDER_DETAIL.DELETE_FAILED);
-        }
+        );
     }
 }

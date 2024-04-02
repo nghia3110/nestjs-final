@@ -38,7 +38,7 @@ export class OrdersController {
 
     @ApiOperation({ summary: 'API get order by Id' })
     @UseGuards(AdminGuard)
-    @Get(':id')
+    @Get('/:id')
     @HttpCode(200)
     async getOrderById(@UuidParam('id') id: string) {
         return await this.ordersService.getOrderById(id);
@@ -64,7 +64,7 @@ export class OrdersController {
         description: 'Store update order'
     })
     @UseGuards(StoreGuard)
-    @Put(':id')
+    @Put('/:id')
     @HttpCode(201)
     async updateOrder(@UuidParam('id') id: string, @Body() payload: UpdateOrderDto, @Store() store: TStore) {
         return await this.ordersService.updateOrder(id, payload, store);
@@ -72,7 +72,7 @@ export class OrdersController {
 
     @ApiOperation({ summary: 'API delete order' })
     @UseGuards(StoreGuard)
-    @Delete(':id')
+    @Delete('/:id')
     @HttpCode(200)
     async deleteOrder(@UuidParam('id') id: string, @Store() store: TStore) {
         await this.ordersService.deleteOrder(id, store);

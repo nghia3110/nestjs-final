@@ -1,6 +1,6 @@
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { ACCESS_TOKEN_SECRET_KEY, AUTH } from 'src/constants';
+import { ACCESS_TOKEN_SECRET_KEY, AUTH, STORE_ACCESS_TOKEN_SECRET_KEY } from 'src/constants';
 import { ITokenPayload } from 'src/interfaces';
 import { ErrorHelper, TokenHelper } from 'src/utils';
 
@@ -20,7 +20,7 @@ export class StoreGuard implements CanActivate {
     async verifyStore(authorization: string) {
         const [bearer, accessToken] = authorization.split(' ');
         if (bearer === 'Bearer' && accessToken !== '') {
-            const payload = TokenHelper.verify(accessToken, ACCESS_TOKEN_SECRET_KEY) as ITokenPayload;
+            const payload = TokenHelper.verify(accessToken, STORE_ACCESS_TOKEN_SECRET_KEY) as ITokenPayload;
             if (!payload.isStore) {
                 ErrorHelper.BadRequestException(AUTH.NOT_STORE);
             }

@@ -9,10 +9,11 @@ import {
   IsUUID,
 } from 'class-validator';
 import { Literal } from 'sequelize/types/utils';
+import { POSITIVE_VALIDATE, REQUIRED_VALIDATE } from 'src/constants';
 
 export class CreateItemDto {
   @IsString()
-  @IsNotEmpty({ message: "The item name field is required!" })
+  @IsNotEmpty({ message: REQUIRED_VALIDATE('item name')})
   @ApiProperty({
     type: String,
     description: 'Item name',
@@ -21,8 +22,8 @@ export class CreateItemDto {
   name: string;
 
   @IsNumber()
-  @IsPositive({message: "The Price must be greater than 0!"})
-  @IsNotEmpty({message: "The Price field is required!"})
+  @IsPositive({message: POSITIVE_VALIDATE('price')})
+  @IsNotEmpty({message: REQUIRED_VALIDATE('price')})
   @ApiProperty({
     type: Number,
     description: 'Price',
@@ -31,8 +32,8 @@ export class CreateItemDto {
   price: number;
 
   @IsNumber()
-  @IsPositive({message: "The Quantity must be greater than 0!"})
-  @IsNotEmpty({ message: "The Quantity field is required!" })
+  @IsPositive({message: POSITIVE_VALIDATE('quantity')})
+  @IsNotEmpty({ message: REQUIRED_VALIDATE('quantity') })
   @ApiProperty({
     type: Number,
     description: 'Quantity in stock',
@@ -54,7 +55,7 @@ export class CreateItemDto {
 
   @IsUUID()
   @IsString()
-  @IsNotEmpty({ message: "The store field is required!" })
+  @IsNotEmpty({ message: REQUIRED_VALIDATE('store') })
   @ApiProperty({
     type: String,
   })

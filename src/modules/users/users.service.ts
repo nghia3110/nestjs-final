@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable, forwardRef } from '@nestjs/common';
 import md5 from 'md5';
 import moment from 'moment';
 
@@ -6,6 +6,7 @@ import {
   ACCESS_TOKEN_EXPIRE_TIME,
   ACCESS_TOKEN_SECRET_KEY,
   APPLICATION,
+  EPromotePoint,
   ERank,
   HASH,
   OTP,
@@ -36,6 +37,7 @@ export class UsersService {
   constructor(
     private readonly usersRepository: UsersRepository,
     private readonly ranksService: RanksService,
+    @Inject(forwardRef(() => OrdersService))
     private readonly ordersService: OrdersService
   ) { }
 
@@ -143,6 +145,22 @@ export class UsersService {
       raw: false,
       nest: true
     });
+  }
+
+  async checkPromoteRank(userId: string): Promise<void> {
+    const user = await this.getUserById(userId);
+    let newRank: string;
+    if (user.totalPoints >= EPromotePoint.SILVER) {
+      const silverRank = await this.ranksService.findByName(ERank.SILVER);
+      newRank = silverRank.id;
+    }
+    if (user.totalPoints >= EPromotePoint.GOLD) {
+      const goldRank = await this.ranksService.findByName(ERank.GOLD);
+      newRank = goldRank.id;
+    }
+    await this.usersRepository.update({
+      rankId: newRank
+    }, { where: { id: userId } });
   }
 
   async login(body: LoginDto): Promise<ILoginResponse<User>> {

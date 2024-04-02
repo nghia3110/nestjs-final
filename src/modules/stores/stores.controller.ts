@@ -40,7 +40,7 @@ export class StoresController {
 
     @ApiOperation({ summary: 'API get store by Id' })
     @UseGuards(AdminGuard)
-    @Get(':id')
+    @Get('/:id')
     @HttpCode(200)
     async getStoreById(@UuidParam('id') id: string) {
         return await this.storesService.getStoreById(id);
@@ -66,7 +66,7 @@ export class StoresController {
         description: 'Admin update store'
     })
     @UseGuards(AdminGuard)
-    @Put(':id')
+    @Put('/:id')
     @HttpCode(201)
     async updateStore(@UuidParam('id') id: string, @Body() payload: UpdateStoreDto) {
         return await this.storesService.updateStore(id, payload);
@@ -74,7 +74,7 @@ export class StoresController {
 
     @ApiOperation({ summary: 'API delete store' })
     @UseGuards(AdminGuard)
-    @Delete(':id')
+    @Delete('/:id')
     @HttpCode(200)
     async deleteStore(@UuidParam('id') id: string) {
         await this.storesService.deleteStore(id);
@@ -82,7 +82,7 @@ export class StoresController {
 
     @ApiOperation({ summary: 'API approve store' })
     @UseGuards(AdminGuard)
-    @Put('/approve/:id')
+    @Put('/approve//:id')
     @HttpCode(201)
     async approveStore(@UuidParam('id') id: string) {
         return await this.storesService.approveStore(id);

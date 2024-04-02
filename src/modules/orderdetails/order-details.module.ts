@@ -11,8 +11,8 @@ import { OrderDetailsService } from './order-details.service';
 @Module({
     imports: [
         SequelizeModule.forFeature([OrderDetail]),
+        forwardRef(() => ItemsModule),
         forwardRef(() => OrdersModule),
-        ItemsModule
     ],
     controllers: [OrderDetailsController],
     providers: [OrderDetailsService, OrderDetailsRepository],

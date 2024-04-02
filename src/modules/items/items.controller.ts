@@ -25,7 +25,7 @@ export class ItemsController {
     constructor(private itemsService: ItemsService) { }
 
     @ApiOperation({ summary: 'API get list items' })
-    //@UseGuards(AdminGuard)
+    @UseGuards(AdminGuard)
     @Get()
     @HttpCode(200)
     async getListItems(
@@ -36,8 +36,8 @@ export class ItemsController {
     }
 
     @ApiOperation({ summary: 'API get item by Id' })
-    //@UseGuards(AdminGuard)
-    @Get(':id')
+    @UseGuards(AdminGuard)
+    @Get('/:id')
     @HttpCode(200)
     async getItemById(@UuidParam('id') id: string) {
         return await this.itemsService.getItemById(id);
@@ -49,7 +49,7 @@ export class ItemsController {
         required: true,
         description: 'Admin create item'
     })
-    //@UseGuards(AdminGuard)
+    @UseGuards(AdminGuard)
     @Post()
     @HttpCode(201)
     async createItem(@Body() payload: CreateItemDto) {
@@ -62,16 +62,16 @@ export class ItemsController {
         required: true,
         description: 'Admin update item'
     })
-    //@UseGuards(AdminGuard)
-    @Put(':id')
+    @UseGuards(AdminGuard)
+    @Put('/:id')
     @HttpCode(201)
     async updateItem(@UuidParam('id') id: string, @Body() payload: UpdateItemDto) {
         return await this.itemsService.updateItem(id, payload);
     }
 
     @ApiOperation({ summary: 'API delete item' })
-    //@UseGuards(AdminGuard)
-    @Delete(':id')
+    @UseGuards(AdminGuard)
+    @Delete('/:id')
     @HttpCode(200)
     async deleteItem(@UuidParam('id') id: string) {
         await this.itemsService.deleteItem(id);

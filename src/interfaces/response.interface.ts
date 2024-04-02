@@ -36,6 +36,5 @@ export interface IVerifyOTPResponse {
 }
 
 export interface IOrderAmount {
-  order: Order,
   totalAmount: number
 }

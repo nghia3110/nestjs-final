@@ -7,6 +7,8 @@ import {
     ACCESS_TOKEN_SECRET_KEY,
     AMOUNT_INCREASE_POINT,
     APPLICATION, EMAIL,
+    EStatus,
+    ORDER,
     OTP,
     OTP_TIME_EXPIRE,
     REFRESH_TOKEN_EXPIRE_TIME,
@@ -14,7 +16,7 @@ import {
     SECRET_KEY_SEND_GMAIL,
     STORE
 } from "src/constants";
-import { AccumulateMethod, GetListDto, Store, User } from "src/database";
+import { AccumulateMethod, GetListDto, MethodDetail, Store, User } from "src/database";
 import {
     IHashResponse,
     ILoginResponse,
@@ -155,27 +157,58 @@ export class StoresService {
         return this.usersService.getUsersByStore(store.id, paginateInfo);
     }
 
-    // Hàm này em viết chưa xong
-    async calculatePoints(orderId: string): Promise<void> {
-        const orderAmount = await this.ordersService.calcOrderAmount(orderId);
-        const user = orderAmount.order.user;
-        const store = orderAmount.order.store;
-        const amount = orderAmount.totalAmount;
+    async completeOrder(orderId: string, storePayload: TStore): Promise<IMessageResponse> {
+        const order = await this.ordersService.getOrderById(orderId);
 
+        if (order.storeId !== storePayload.id) {
+            ErrorHelper.BadRequestException(ORDER.ORDER_NOT_FOUND);
+        }
+
+        const [user, store] = await Promise.all([
+            this.usersService.getUserById(order.userId),
+            this.getStoreById(order.storeId)
+        ]);
+
+        const orderAmount = await this.ordersService.calcOrderAmount(orderId);
+
+        await this.ordersService.updateOrder(order.id,
+            {
+                status: EStatus.SUCCESS
+            },
+            storePayload);
+
+        const amount = orderAmount.totalAmount;
         const methodDetail = await this.methodDetailsService.getMethodDetail(store.methodId, user.rankId);
+        const bonusPoints = this.calculatePoints(methodDetail, amount);
+
+        await this.usersService.updateUser(user.id, {
+            totalPoints: user.totalPoints + bonusPoints,
+            currentPoints: user.currentPoints + bonusPoints
+        });
+
+        await this.usersService.checkPromoteRank(user.id);
+
+        return {
+            message: STORE.COMPLETE_ORDER_SUCCESS
+        }
+    }
+
+    private calculatePoints(methodDetail: MethodDetail, amount: number): number {
         let bonusPoints: number;
 
         if (methodDetail.fixedPoint > 0) {
-            bonusPoints = (amount / AMOUNT_INCREASE_POINT) * methodDetail.fixedPoint;
+            bonusPoints = Math.floor(amount / AMOUNT_INCREASE_POINT) * methodDetail.fixedPoint;
         } else {
             if (amount < AMOUNT_INCREASE_POINT) {
-                bonusPoints = Math.min(methodDetail.maxPoint, (amount * 0.001) * (methodDetail.percentage / 100));
+                bonusPoints = Math.min(methodDetail.maxPoint, Math.round(amount * 0.001) * (methodDetail.percentage / 100));
             } else {
-                const r = amount / AMOUNT_INCREASE_POINT;
+                const r = Math.floor(amount / AMOUNT_INCREASE_POINT);
                 bonusPoints = methodDetail.maxPoint * r +
-                    Math.min(methodDetail.maxPoint, ((amount - r * AMOUNT_INCREASE_POINT) * 0.001) * (methodDetail.percentage / 100));
+                    Math.min(methodDetail.maxPoint, Math.round((amount - r * AMOUNT_INCREASE_POINT) * 0.001) * (methodDetail.percentage / 100));
             }
         }
+
+        return Math.round(bonusPoints);
     }
 
     async register(body: CreateStoreDto): Promise<IHashResponse> {

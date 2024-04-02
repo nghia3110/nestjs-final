@@ -35,4 +35,7 @@ export class CreateOrderDetailDto {
     itemId: string;
 }
 
-export class UpdateOrderDetailDto extends PartialType(CreateOrderDetailDto) { }
+export class UpdateOrderDetailDto extends PartialType(CreateOrderDetailDto) { 
+    @IsString()
+    status: string;
+}

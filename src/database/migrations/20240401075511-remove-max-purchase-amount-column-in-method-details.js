@@ -2,10 +2,14 @@
 
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
-  async up (queryInterface, Sequelize) {
+  async up(queryInterface, Sequelize) {
     await queryInterface.removeColumn('method_details', 'max_purchase_amount');
   },
 
-  async down (queryInterface, Sequelize) {
+  async down(queryInterface, Sequelize) {
+    await queryInterface.addColumn('method_details', 'max_purchase_amount', {
+      allowNull: false,
+      type: Sequelize.DOUBLE
+    })
   }
 };

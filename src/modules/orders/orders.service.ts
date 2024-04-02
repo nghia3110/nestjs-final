@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Inject, Injectable, forwardRef } from "@nestjs/common";
 import { EStatus, ORDER } from "src/constants";
 import { GetListDto, Order, Store, User } from "src/database";
 import { IMessageResponse, IOrderAmount, IPaginationRes } from "src/interfaces";
@@ -13,7 +13,9 @@ import { OrderDetailsService } from "../orderdetails/order-details.service";
 export class OrdersService {
     constructor(
         private readonly ordersRepository: OrdersRepository,
+        @Inject(forwardRef(() => UsersService))
         private readonly usersService: UsersService,
+        @Inject(forwardRef(() => OrderDetailsService))
         private readonly orderDetailsService: OrderDetailsService
     ) { }
 
@@ -46,12 +48,12 @@ export class OrdersService {
                 {
                     model: User,
                     as: 'user',
-                    attributes: ['firstName', 'lastName', 'rankId']
+                    attributes: ['firstName', 'lastName']
                 },
                 {
                     model: Store,
                     as: 'store',
-                    attributes: ['name', 'methodId']
+                    attributes: ['name']
                 }
             ],
             raw: false,
@@ -70,8 +72,6 @@ export class OrdersService {
     }
 
     async calcOrderAmount(orderId: string): Promise<IOrderAmount> {
-        const order = await this.getOrderById(orderId);
-        
         const orderDetails = await this.orderDetailsService.getOrderDetailsByOrder(orderId);
 
         const totalAmount = orderDetails.reduce((total, currentDetail) => {
@@ -82,10 +82,9 @@ export class OrdersService {
 
         const orderDetailsIds = orderDetails.map(detail => detail.id);
 
-        await this.orderDetailsService.deleteManyOrderDetails(orderDetailsIds);
-
+        await this.orderDetailsService.updateStatusOrderDetails(orderDetailsIds);
+        
         return {
-            order,
             totalAmount
         }
     }
@@ -97,7 +96,6 @@ export class OrdersService {
             {
                 ...body,
                 storeId: store.id,
-                status: EStatus.PENDING
             }
         )
     }

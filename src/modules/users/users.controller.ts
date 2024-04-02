@@ -41,7 +41,7 @@ export class UsersController {
 
   @ApiOperation({ summary: 'API get user by Id' })
   @UseGuards(AdminGuard)
-  @Get(':id')
+  @Get('/:id')
   @HttpCode(200)
   async getUserById(@UuidParam('id') id: string) {
     return await this.usersService.getUserById(id);
@@ -67,7 +67,7 @@ export class UsersController {
     description: 'Admin update user'
   })
   @UseGuards(AdminGuard)
-  @Put(':id')
+  @Put('/:id')
   @HttpCode(201)
   async updateUser(@UuidParam('id') id: string, @Body() payload: UpdateUserDto) {
     return await this.usersService.updateUser(id, payload);
@@ -75,7 +75,7 @@ export class UsersController {
 
   @ApiOperation({ summary: 'API delete user' })
   @UseGuards(AdminGuard)
-  @Delete(':id')
+  @Delete('/:id')
   @HttpCode(200)
   async deleteUser(@UuidParam('id') id: string) {
     await this.usersService.deleteUser(id);
