@@ -9,15 +9,16 @@ import {
     Query,
     UseGuards
 } from '@nestjs/common';
-import { ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 
+import { GetListDto } from 'src/database';
+import { TStore } from 'src/types';
+import { AdminGuard, Store, StoreGuard, UuidParam } from 'src/utils';
 import {
     CreateItemDto,
     UpdateItemDto,
 } from './dto';
 import { ItemsService } from './items.service';
-import { AdminGuard, UuidParam } from 'src/utils';
-import { GetListDto } from 'src/database';
 
 @ApiTags('items')
 @Controller('items')
@@ -25,6 +26,7 @@ export class ItemsController {
     constructor(private itemsService: ItemsService) { }
 
     @ApiOperation({ summary: 'API get list items' })
+    @ApiBearerAuth()
     @UseGuards(AdminGuard)
     @Get()
     @HttpCode(200)
@@ -36,6 +38,7 @@ export class ItemsController {
     }
 
     @ApiOperation({ summary: 'API get item by Id' })
+    @ApiBearerAuth()
     @UseGuards(AdminGuard)
     @Get('/:id')
     @HttpCode(200)
@@ -47,33 +50,50 @@ export class ItemsController {
     @ApiBody({
         type: CreateItemDto,
         required: true,
-        description: 'Admin create item'
+        description: 'Store create item'
     })
-    @UseGuards(AdminGuard)
+    @ApiBearerAuth()
+    @UseGuards(StoreGuard)
     @Post()
     @HttpCode(201)
-    async createItem(@Body() payload: CreateItemDto) {
-        return await this.itemsService.createItem(payload);
+    async createItem(@Body() payload: CreateItemDto, @Store() store: TStore) {
+        return await this.itemsService.createItem(payload, store);
+    }
+
+    @ApiOperation({ summary: 'API create item' })
+    @ApiBody({
+        type: CreateItemDto,
+        required: true,
+        description: 'Store create item'
+    })
+    @ApiBearerAuth()
+    @UseGuards(StoreGuard)
+    @Post('/create-many')
+    @HttpCode(201)
+    async createManyItems(@Body() payload: CreateItemDto[], @Store() store: TStore) {
+        return await this.itemsService.createManyItems(payload, store);
     }
 
     @ApiOperation({ summary: 'API update item' })
     @ApiBody({
         type: UpdateItemDto,
         required: true,
-        description: 'Admin update item'
+        description: 'Store update item'
     })
-    @UseGuards(AdminGuard)
+    @ApiBearerAuth()
+    @UseGuards(StoreGuard)
     @Put('/:id')
     @HttpCode(201)
-    async updateItem(@UuidParam('id') id: string, @Body() payload: UpdateItemDto) {
-        return await this.itemsService.updateItem(id, payload);
+    async updateItem(@UuidParam('id') id: string, @Body() payload: UpdateItemDto, @Store() store: TStore) {
+        return await this.itemsService.updateItem(id, payload, store);
     }
 
     @ApiOperation({ summary: 'API delete item' })
-    @UseGuards(AdminGuard)
+    @ApiBearerAuth()
+    @UseGuards(StoreGuard)
     @Delete('/:id')
     @HttpCode(200)
-    async deleteItem(@UuidParam('id') id: string) {
-        await this.itemsService.deleteItem(id);
+    async deleteItem(@UuidParam('id') id: string, @Store() store: TStore) {
+        await this.itemsService.deleteItem(id, store);
     }
 }

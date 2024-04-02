@@ -3,12 +3,22 @@ import { Item } from "./items.model";
 import { RedeemDetail } from "./redeem-details.model";
 import { Redeem } from "./redeem.model";
 import { BaseModel } from "../base.model";
+import { Store } from "./stores.model";
 
 @Table({
     tableName: 'redeem_items',
     underscored: true
 })
 export class RedeemItem extends BaseModel {
+    @Column
+    name: string;
+
+    @Column
+    photo: string;
+
+    @Column
+    description: string;
+
     @Column({
         type: DataType.DOUBLE
     })
@@ -22,14 +32,14 @@ export class RedeemItem extends BaseModel {
     })
     quantity: number;
 
-    @ForeignKey(() => Item)
+    @ForeignKey(() => Store)
     @Column({
         type: DataType.UUID
     })
-    itemId: string;
+    storeId: string;
 
-    @BelongsTo(() => Item)
-    item: Item;
+    @BelongsTo(() => Store)
+    store: Store;
 
     @BelongsToMany(() => Redeem, () => RedeemDetail)
     redeems: Redeem[];

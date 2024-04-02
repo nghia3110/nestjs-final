@@ -20,7 +20,9 @@ export class StoreGuard implements CanActivate {
     async verifyStore(authorization: string) {
         const [bearer, accessToken] = authorization.split(' ');
         if (bearer === 'Bearer' && accessToken !== '') {
+            console.log(STORE_ACCESS_TOKEN_SECRET_KEY)
             const payload = TokenHelper.verify(accessToken, STORE_ACCESS_TOKEN_SECRET_KEY) as ITokenPayload;
+            console.log(payload)
             if (!payload.isStore) {
                 ErrorHelper.BadRequestException(AUTH.NOT_STORE);
             }

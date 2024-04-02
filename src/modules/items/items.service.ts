@@ -1,18 +1,17 @@
 import { Injectable } from "@nestjs/common";
-import { ItemsRepository } from "./items.repository";
+import { BulkCreateOptions } from "sequelize";
+import { ITEM } from "src/constants";
 import { GetListDto, Item, Store } from "src/database";
 import { IMessageResponse, IPaginationRes } from "src/interfaces";
-import { CreateItemDto, UpdateItemDto, UpdateItemQuantityDto } from "./dto";
-import { StoresService } from "../stores/stores.service";
+import { TStore } from "src/types";
 import { ErrorHelper } from "src/utils";
-import { ITEM, STORE } from "src/constants";
-import { BulkCreateOptions } from "sequelize";
+import { CreateItemDto, UpdateItemDto, UpdateItemQuantityDto } from "./dto";
+import { ItemsRepository } from "./items.repository";
 
 @Injectable()
 export class ItemsService {
     constructor(
         private readonly itemsRepository: ItemsRepository,
-        private readonly storesService: StoresService
     ) { }
 
     async getListItems(paginateInfo: GetListDto): Promise<IPaginationRes<Item>> {
@@ -21,7 +20,7 @@ export class ItemsService {
             include: [{
                 model: Store,
                 as: 'store',
-                attributes: ['id','name']
+                attributes: ['id', 'name']
             }],
             attributes: { exclude: ['storeId'] },
             order: [['createdAt', 'ASC']],
@@ -38,54 +37,72 @@ export class ItemsService {
                 as: 'store',
                 attributes: ['name']
             }],
+            attributes: { exclude: ['storeId'] },
             raw: false,
             nest: true
         });
-        if(!item) {
+        if (!item) {
             ErrorHelper.BadRequestException(ITEM.ITEM_NOT_FOUND);
         }
         return item;
     }
 
-    async getItemByStore(storeId: string): Promise<Item[]> {
-        return this.itemsRepository.find({
+    async getItemsByStore(storeId: string, paginateInfo: GetListDto): Promise<IPaginationRes<Item>> {
+        const { page, limit } = paginateInfo;
+        return this.itemsRepository.paginate(parseInt(page), parseInt(limit), {
             where: {
                 storeId
-            }
-        })
+            },
+            include: [{
+                model: Store,
+                as: 'store',
+                attributes: ['name']
+            }],
+            attributes: { exclude: ['storeId'] },
+            raw: false,
+            nest: true
+        });
     }
 
-    async checkStoreExist(storeId: string): Promise<void> {
-        const store = await this.storesService.getStoreById(storeId);
-        if (!store) {
-            ErrorHelper.NotFoundException(STORE.STORE_NOT_FOUND);
-        }
+    async createItem(body: CreateItemDto, store: TStore): Promise<Item> {
+        return this.itemsRepository.create({
+            ...body,
+            storeId: store.id
+        });
     }
 
-    async createItem(body: CreateItemDto): Promise<Item> {
-        await this.checkStoreExist(body.storeId);
-        return this.itemsRepository.create(body);
+    async createManyItems(body: CreateItemDto[], store: TStore): Promise<Item[]> {
+        const items = body.map(item => ({
+            ...item,
+            storeId: store.id
+        }));
+
+        return this.itemsRepository.bulkCreate(items);
     }
 
     async bulkCreateItems(body: UpdateItemQuantityDto[], options: BulkCreateOptions<Item>): Promise<Item[]> {
         return this.itemsRepository.bulkCreate(body, options);
     }
 
-    async updateItem(id: string, body: UpdateItemDto): Promise<Item[]> {
+    async updateItem(id: string, body: UpdateItemDto, store: TStore): Promise<Item[]> {
         const item = await this.getItemById(id);
 
-        if (body.storeId && body.storeId !== item.storeId) {
-            await this.checkStoreExist(body.storeId);
+        if (item.storeId !== store.id) {
+            ErrorHelper.BadRequestException(ITEM.ITEM_NOT_FOUND);
         }
 
         return this.itemsRepository.update(body, { where: { id } });
     }
 
-    async deleteItem(id: string): Promise<IMessageResponse> {
-        await this.getItemById(id);
+    async deleteItem(id: string, store: TStore): Promise<IMessageResponse> {
+        const item = await this.getItemById(id);
+
+        if (item.storeId !== store.id) {
+            ErrorHelper.BadRequestException(ITEM.ITEM_NOT_FOUND);
+        }
 
         const deleteResult = await this.itemsRepository.delete({ where: { id } });
-        if(deleteResult <= 0) {
+        if (deleteResult <= 0) {
             ErrorHelper.BadRequestException(ITEM.DELETE_FAILED);
         }
         return {

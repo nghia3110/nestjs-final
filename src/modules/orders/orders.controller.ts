@@ -9,7 +9,7 @@ import {
     Query,
     UseGuards
 } from '@nestjs/common';
-import { ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { GetListDto } from 'src/database';
 import { TStore } from 'src/types';
@@ -26,6 +26,7 @@ export class OrdersController {
     constructor(private ordersService: OrdersService) { }
 
     @ApiOperation({ summary: 'API get list orders' })
+    @ApiBearerAuth()
     @UseGuards(AdminGuard)
     @Get()
     @HttpCode(200)
@@ -37,6 +38,7 @@ export class OrdersController {
     }
 
     @ApiOperation({ summary: 'API get order by Id' })
+    @ApiBearerAuth()
     @UseGuards(AdminGuard)
     @Get('/:id')
     @HttpCode(200)
@@ -45,6 +47,7 @@ export class OrdersController {
     }
 
     @ApiOperation({ summary: 'API create order' })
+    @ApiBearerAuth()
     @ApiBody({
         type: CreateOrderDto,
         required: true,
@@ -63,6 +66,7 @@ export class OrdersController {
         required: true,
         description: 'Store update order'
     })
+    @ApiBearerAuth()
     @UseGuards(StoreGuard)
     @Put('/:id')
     @HttpCode(201)
@@ -71,6 +75,7 @@ export class OrdersController {
     }
 
     @ApiOperation({ summary: 'API delete order' })
+    @ApiBearerAuth()
     @UseGuards(StoreGuard)
     @Delete('/:id')
     @HttpCode(200)

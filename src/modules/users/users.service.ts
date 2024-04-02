@@ -163,7 +163,7 @@ export class UsersService {
     }, { where: { id: userId } });
   }
 
-  async login(body: LoginDto): Promise<ILoginResponse<User>> {
+  async login(body: LoginDto): Promise<ILoginResponse> {
     const { password, email } = body;
 
     const user = await this.usersRepository.findOne({
@@ -190,8 +190,7 @@ export class UsersService {
     );
     delete user.password;
     return {
-      token,
-      item: user,
+      token
     };
   }
 

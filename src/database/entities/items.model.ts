@@ -38,9 +38,6 @@ export class Item extends BaseModel {
     @BelongsTo(() => Store)
     store: Store;
 
-    @HasOne(() => RedeemItem)
-    redeemItem: RedeemItem;
-
     @BelongsToMany(() => Order, () => OrderDetail)
     orders: Order[];
 }

@@ -7,7 +7,7 @@ import { ErrorHelper } from "src/utils";
 import { UsersService } from "../users/users.service";
 import { CreateOrderDto, UpdateOrderDto } from "./dto";
 import { OrdersRepository } from "./orders.repository";
-import { OrderDetailsService } from "../orderdetails/order-details.service";
+import { OrderDetailsService } from "../order-details/order-details.service";
 
 @Injectable()
 export class OrdersService {
