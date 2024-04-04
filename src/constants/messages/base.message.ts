@@ -30,3 +30,4 @@ export const HASH = {
 export const REQUIRED_VALIDATE = (field: string) => `The ${field} is required!`;
 export const MAX_LENGTH_VALIDATE = (field: string, numChars: number) => `The ${field} is less than ${numChars} characters.`;
 export const MIN_LENGTH_VALIDATE = (field: string, numChars: number) => `The ${field} is from ${numChars} characters or more.`;
+export const POSITIVE_VALIDATE = (field: string) => `The ${field} must be greater than 0!`;

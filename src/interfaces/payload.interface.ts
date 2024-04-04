@@ -1,4 +1,5 @@
 export interface ITokenPayload {
     id: string,
-    isAdmin: boolean
+    isAdmin?: boolean,
+    isStore?: boolean
 }

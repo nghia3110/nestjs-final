@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable, forwardRef } from '@nestjs/common';
 import md5 from 'md5';
 import moment from 'moment';
 
@@ -6,6 +6,7 @@ import {
   ACCESS_TOKEN_EXPIRE_TIME,
   ACCESS_TOKEN_SECRET_KEY,
   APPLICATION,
+  EPromotePoint,
   ERank,
   HASH,
   OTP,
@@ -26,18 +27,21 @@ import { IHashResponse, ILoginResponse, IMessageResponse, IPaginationRes, IToken
 
 import { LoginDto } from './dto/login.dto';
 import { UsersRepository } from './users.repository';
-import { CreateUserDto, GetListUserDto, UpdateUserDto } from './dto';
-import { Rank, User } from 'src/database';
+import { CreateUserDto, UpdateUserDto } from './dto';
+import { GetListDto, Order, Rank, User } from 'src/database';
 import { Op } from 'sequelize';
 import { RanksService } from '../ranks/ranks.service';
-
+import { OrdersService } from '../orders/orders.service';
 @Injectable()
 export class UsersService {
   constructor(
     private readonly usersRepository: UsersRepository,
-    private readonly ranksService: RanksService) { }
+    private readonly ranksService: RanksService,
+    @Inject(forwardRef(() => OrdersService))
+    private readonly ordersService: OrdersService
+  ) { }
 
-  async getListUsers(paginateInfo: GetListUserDto): Promise<IPaginationRes<User>> {
+  async getListUsers(paginateInfo: GetListDto): Promise<IPaginationRes<User>> {
     const { page, limit } = paginateInfo;
     return this.usersRepository.paginate(parseInt(page), parseInt(limit), {
       include: [{
@@ -121,6 +125,42 @@ export class UsersService {
     return {
       message: USER.DELETE_SUCCESS
     }
+  }
+
+  async getUsersByStore(storeId: string, paginateInfo: GetListDto): Promise<IPaginationRes<User>> {
+    const orders = await this.ordersService.getOrdersByStore(storeId);
+
+    const userIds = orders.map(order => order.userId);
+
+    const { page, limit } = paginateInfo;
+    return this.usersRepository.paginate(parseInt(page), parseInt(limit), {
+      where: {
+        id: { userIds }
+      },
+      include: [{
+        model: Rank,
+        as: 'rank'
+      }],
+      attributes: { exclude: ['password', 'rankId'] },
+      raw: false,
+      nest: true
+    });
+  }
+
+  async checkPromoteRank(userId: string): Promise<void> {
+    const user = await this.getUserById(userId);
+    let newRank: string;
+    if (user.totalPoints >= EPromotePoint.SILVER) {
+      const silverRank = await this.ranksService.findByName(ERank.SILVER);
+      newRank = silverRank.id;
+    }
+    if (user.totalPoints >= EPromotePoint.GOLD) {
+      const goldRank = await this.ranksService.findByName(ERank.GOLD);
+      newRank = goldRank.id;
+    }
+    await this.usersRepository.update({
+      rankId: newRank
+    }, { where: { id: userId } });
   }
 
   async login(body: LoginDto): Promise<ILoginResponse<User>> {

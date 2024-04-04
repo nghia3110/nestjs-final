@@ -1,12 +1,20 @@
 import { Module } from '@nestjs/common';
 
-import { PostgresqlModule } from './database';
-import { UploadsModule, UsersModule } from './modules';
-import { IoRedisModule } from './utils';
 import { AppController } from './app.controller';
+import { PostgresqlModule } from './database';
+import {
+  ItemsModule,
+  MethodDetailsModule,
+  MethodsModule,
+  OrderDetailsModule,
+  OrdersModule,
+  StoresModule,
+  UploadsModule,
+  UsersModule
+} from './modules';
 import { RanksModule } from './modules/ranks/ranks.module';
-import { StoresModule } from './modules/stores/stores.module';
-import { MethodsModule } from './modules/methods/methods.module';
+import { IoRedisModule } from './utils';
+
 
 @Module({
   imports: [
@@ -16,6 +24,10 @@ import { MethodsModule } from './modules/methods/methods.module';
     StoresModule,
     MethodsModule,
     RanksModule,
+    OrdersModule,
+    OrderDetailsModule,
+    MethodDetailsModule,
+    ItemsModule,
     PostgresqlModule
   ],
   controllers: [AppController],

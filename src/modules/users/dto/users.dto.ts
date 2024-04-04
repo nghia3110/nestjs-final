@@ -4,6 +4,7 @@ import {
   IsBoolean,
   IsEmail,
   IsNotEmpty,
+  IsNumber,
   IsNumberString,
   IsOptional,
   IsString,
@@ -11,16 +12,6 @@ import {
   MinLength
 } from 'class-validator';
 import { MAX_LENGTH_VALIDATE, MIN_LENGTH_VALIDATE, REQUIRED_VALIDATE } from 'src/constants';
-
-export class GetListUserDto {
-  @IsOptional()
-  @IsNumberString()
-  page?: string;
-
-  @IsOptional()
-  @IsNumberString()
-  limit?: string;
-}
 
 export class CreateUserDto {
   @IsString()
@@ -82,4 +73,12 @@ export class UpdateUserDto extends OmitType(PartialType(CreateUserDto), ['passwo
     example: true,
   })
   isVerified?: boolean;
+
+  @IsNumber()
+  @IsOptional()
+  totalPoints?: number;
+
+  @IsNumber()
+  @IsOptional()
+  currentPoints?: number;
 }

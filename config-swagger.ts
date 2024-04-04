@@ -8,7 +8,15 @@ export const swaggerConfig = (app: NestExpressApplication): void => {
     .setVersion('1.0')
     .addTag('users')
     .addTag('upload')
-    .addBearerAuth()
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'Bearer',
+        bearerFormat: 'JWT', 
+        name: 'Authorization', 
+        in: 'header',
+      },
+      'access-token')
     .addSecurity('basic', {
       type: 'http',
       scheme: 'basic',

@@ -12,6 +12,7 @@ export const SECRET_CRONJOB: string = process.env.SECRET_CRONJOB || '27dfa083-46
 //token
 export const ACCESS_TOKEN_EXPIRE_TIME = process.env.ACCESS_TOKEN_EXPIRE_TIME || '30d';
 export const ACCESS_TOKEN_SECRET_KEY = process.env.ACCESS_TOKEN_SECRET_KEY || '5239955f-4e01-4873-aca9-5183816ae4a9';
+export const STORE_ACCESS_TOKEN_SECRET_KEY = process.env.STORE_ACCESS_TOKEN_SECRET_KEY || '50ffe3c5-aeb1-4b07-b0d1-d0adf0008b22';
 
 //refresh-token
 export const REFRESH_TOKEN_EXPIRE_TIME = process.env.REFRESH_TOKEN_EXPIRE_TIME || '90d';
