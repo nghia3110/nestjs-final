@@ -15,10 +15,10 @@ import { AdminGuard, UuidParam } from 'src/utils';
 import {
   CreateUserDto,
   ForgetPasswordDto,
-  LoginDto,
-  SendOTPDto,
+  LoginUserDto,
+  SendUserOTPDto,
   UpdateUserDto,
-  VerifyOTPDto
+  VerifyUserOTPDto
 } from './dto';
 import { UsersService } from './users.service';
 import { GetListDto } from 'src/database';
@@ -86,41 +86,53 @@ export class UsersController {
 
   @ApiOperation({ summary: 'API Login' })
   @ApiBody({
-    type: LoginDto,
+    type: LoginUserDto,
     required: true,
     description: 'Login user',
   })
   @Post('/login')
   @HttpCode(200)
-  async login(@Body() payload: LoginDto) {
+  async login(@Body() payload: LoginUserDto) {
     return this.usersService.login(payload);
   }
 
+  @ApiOperation({ summary: 'API register user' })
+    @ApiBody({
+        type: CreateUserDto,
+        required: true,
+        description: 'Register user'
+    })
+    @Post("/register")
+    @HttpCode(201)
+    async register(@Body() payload: CreateUserDto) {
+        return await this.usersService.register(payload);
+    }
+
   @ApiOperation({ summary: 'API send OTP' })
   @ApiBody({
-    type: SendOTPDto,
+    type: SendUserOTPDto,
     required: true,
     description: 'Send OTP',
   })
   @Post('/send-otp')
   @HttpCode(200)
-  async sendOtp(@Body() payload: SendOTPDto) {
-    const { email, hash } = payload;
-    const result = await this.usersService.sendOTP(email, hash);
+  async sendOtp(@Body() payload: SendUserOTPDto) {
+    const { phoneNumber, hash } = payload;
+    const result = await this.usersService.sendOTP(phoneNumber, hash);
     return {
-      hash: result,
+      result
     };
   }
 
   @ApiOperation({ summary: 'API verify OTP' })
   @ApiBody({
-    type: VerifyOTPDto,
+    type: VerifyUserOTPDto,
     required: true,
     description: 'Verify OTP',
   })
   @Post('/verify-otp')
   @HttpCode(200)
-  async verifyOtp(@Body() payload: VerifyOTPDto) {
+  async verifyOtp(@Body() payload: VerifyUserOTPDto) {
     const { otp, hash } = payload;
     const result = await this.usersService.verifyOTP(otp, hash);
     return {

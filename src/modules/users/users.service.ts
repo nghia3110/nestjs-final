@@ -13,25 +13,25 @@ import {
   OTP_TIME_EXPIRE,
   REFRESH_TOKEN_EXPIRE_TIME,
   REFRESH_TOKEN_SECRET_KEY,
-  SECRET_KEY_SEND_GMAIL,
+  SECRET_KEY_SEND_SMS,
   USER,
 } from 'src/constants';
+import { IHashResponse, ILoginResponse, IMessageResponse, IPaginationRes, IToken } from 'src/interfaces';
 import {
   CommonHelper,
   EncryptHelper,
   ErrorHelper,
-  SendEmailHelper,
+  SendSmsHelper,
   TokenHelper,
 } from 'src/utils/helpers';
-import { IHashResponse, ILoginResponse, IMessageResponse, IPaginationRes, IToken } from 'src/interfaces';
 
-import { LoginDto } from './dto/login.dto';
-import { UsersRepository } from './users.repository';
-import { CreateUserDto, UpdateUserDto } from './dto';
-import { GetListDto, Order, Rank, User } from 'src/database';
 import { Op } from 'sequelize';
-import { RanksService } from '../ranks/ranks.service';
+import { GetListDto, Rank, User } from 'src/database';
 import { OrdersService } from '../orders/orders.service';
+import { RanksService } from '../ranks/ranks.service';
+import { CreateUserDto, LoginUserDto, UpdateUserDto } from './dto';
+import { UsersRepository } from './users.repository';
+
 @Injectable()
 export class UsersService {
   constructor(
@@ -165,12 +165,12 @@ export class UsersService {
     }, { where: { id: userId } });
   }
 
-  async login(body: LoginDto): Promise<ILoginResponse> {
-    const { password, email } = body;
+  async login(body: LoginUserDto): Promise<ILoginResponse> {
+    const { password, phoneNumber } = body;
 
     const user = await this.usersRepository.findOne({
       where: {
-        email,
+        phoneNumber,
       },
     });
 
@@ -196,6 +196,26 @@ export class UsersService {
     };
   }
 
+  async register(body: CreateUserDto): Promise<IHashResponse> {
+    await this.checkConflictInfo(body.email, body.phoneNumber);
+
+    const hashPassword = await EncryptHelper.hash(body.password);
+
+    const newUser = await this.usersRepository.create(
+        {
+            ...body,
+            password: hashPassword
+        });
+
+    const hashCode = md5(
+      newUser.phoneNumber + SECRET_KEY_SEND_SMS
+    );
+
+    return {
+        hash: hashCode
+    };
+}
+
   private generateToken(payload: object): IToken {
     const { token: accessToken, expires } = TokenHelper.generate(
       payload,
@@ -215,9 +235,9 @@ export class UsersService {
     };
   }
 
-  async sendOTP(email: string, hash: string): Promise<IHashResponse> {
+  async sendOTP(phoneNumber: string, hash: string): Promise<IHashResponse> {
     const checkHash = md5(
-      email + SECRET_KEY_SEND_GMAIL + moment().format('DD/MM/YYYY'),
+      phoneNumber + SECRET_KEY_SEND_SMS,
     );
 
     if (checkHash !== hash) {
@@ -225,17 +245,17 @@ export class UsersService {
     }
 
     const OTP = CommonHelper.generateOTP();
-    SendEmailHelper.sendOTP({
-      to: email,
-      subject: 'Confirm OTP',
-      OTP,
+    
+    SendSmsHelper.sendOtp({
+      to: phoneNumber,
+      otp: OTP
     });
-
+    
     const hashCode = CommonHelper.hashData(
       JSON.stringify({
         otp: OTP,
         time: moment().add(OTP_TIME_EXPIRE, 'second').valueOf(),
-        email,
+        phoneNumber,
         isVerified: false,
       }),
     );
@@ -262,7 +282,7 @@ export class UsersService {
     const hashCode = CommonHelper.hashData(
       JSON.stringify({
         time: moment().add(OTP_TIME_EXPIRE, 'second').valueOf(),
-        email: hashInfo.email,
+        phoneNumber: hashInfo.phoneNumber,
         isVerified: true,
       }),
     );
