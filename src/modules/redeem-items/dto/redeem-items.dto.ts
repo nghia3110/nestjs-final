@@ -1,18 +1,20 @@
 import { ApiProperty, PartialType } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
-    IsDateString,
+  IsArray,
+  IsDateString,
   IsNotEmpty,
   IsNumber,
   IsPositive,
   IsString,
-  IsUUID,
+  ValidateNested,
 } from 'class-validator';
-import { Literal } from 'sequelize/types/utils';
-import { POSITIVE_VALIDATE, REQUIRED_VALIDATE } from 'src/constants';
+import { ITEM, POSITIVE_VALIDATE, REQUIRED_VALIDATE } from 'src/constants';
+import { IsValidDate } from 'src/utils';
 
 export class CreateRedeemItemDto {
   @IsString()
-  @IsNotEmpty({ message: REQUIRED_VALIDATE('item name')})
+  @IsNotEmpty({ message: REQUIRED_VALIDATE('item name') })
   @ApiProperty({
     type: String,
     description: 'RedeemItem name',
@@ -21,8 +23,8 @@ export class CreateRedeemItemDto {
   name: string;
 
   @IsNumber()
-  @IsPositive({message: POSITIVE_VALIDATE('exchange point')})
-  @IsNotEmpty({message: REQUIRED_VALIDATE('exchange point')})
+  @IsPositive({ message: POSITIVE_VALIDATE('exchange point') })
+  @IsNotEmpty({ message: REQUIRED_VALIDATE('exchange point') })
   @ApiProperty({
     type: Number,
     description: 'Exchange point',
@@ -31,7 +33,7 @@ export class CreateRedeemItemDto {
   exchangePoint: number;
 
   @IsNumber()
-  @IsPositive({message: POSITIVE_VALIDATE('quantity')})
+  @IsPositive({ message: POSITIVE_VALIDATE('quantity') })
   @IsNotEmpty({ message: REQUIRED_VALIDATE('quantity') })
   @ApiProperty({
     type: Number,
@@ -42,7 +44,8 @@ export class CreateRedeemItemDto {
 
   @IsString()
   @IsDateString()
-  @IsNotEmpty({message: REQUIRED_VALIDATE('expired time')})
+  @IsValidDate({ message: ITEM.INVALID_EXPIRED_TIME })
+  @IsNotEmpty({ message: REQUIRED_VALIDATE('expired time') })
   @ApiProperty({
     type: String,
     description: 'Expired time',
@@ -62,12 +65,14 @@ export class CreateRedeemItemDto {
   description: string;
 }
 
-export class UpdateRedeemItemDto extends PartialType(CreateRedeemItemDto) {}
+export class UpdateRedeemItemDto extends PartialType(CreateRedeemItemDto) { }
 
-export class UpdateRedeemItemQuantityDto {
-  @IsUUID()
-  @IsString()
-  id: string;
-
-  quantity: Literal;
+export class CreateArrayRedeemItemDto {
+  @IsArray()
+  @Type(() => CreateRedeemItemDto)
+  @ValidateNested({ each: true })
+  @ApiProperty({
+    type: [CreateRedeemItemDto]
+  })
+  items: CreateRedeemItemDto[];
 }

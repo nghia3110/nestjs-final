@@ -14,6 +14,7 @@ import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { GetListDto } from 'src/database';
 import { AdminGuard, StoreGuard, UuidParam } from 'src/utils';
 import {
+    CreateManyDetailsDto,
     CreateOrderDetailDto,
     UpdateOrderDetailDto,
 } from './dto';
@@ -30,10 +31,8 @@ export class OrderDetailsController {
     @Get()
     @HttpCode(200)
     async getListOrderDetails(
-        @Query('page') page?: string,
-        @Query('limit') limit?: string) {
-        const paginateInfo = { page, limit } as GetListDto;
-        return await this.orderDetailsService.getListOrderDetails(paginateInfo);
+        @Query() query: GetListDto) {
+        return await this.orderDetailsService.getListOrderDetails(query);
     }
 
     @ApiOperation({ summary: 'API get order detail by Id' })
@@ -59,6 +58,20 @@ export class OrderDetailsController {
         return await this.orderDetailsService.createOrderDetail(payload);
     }
 
+    @ApiOperation({ summary: 'API create order details' })
+    @ApiBody({
+        type: CreateManyDetailsDto,
+        required: true,
+        description: 'Create order details'
+    })
+    @ApiBearerAuth()
+    @UseGuards(StoreGuard)
+    @Post('/create-many')
+    @HttpCode(201)
+    async createManyOrderDetails(@Body() payload: CreateManyDetailsDto) {
+        return await this.orderDetailsService.createManyOrderDetails(payload);
+    }
+
     @ApiOperation({ summary: 'API update order detail' })
     @ApiBody({
         type: UpdateOrderDetailDto,
@@ -79,6 +92,6 @@ export class OrderDetailsController {
     @Delete('/:id')
     @HttpCode(200)
     async deleteOrderDetail(@UuidParam('id') id: string) {
-        await this.orderDetailsService.deleteOrderDetail(id);
+        return await this.orderDetailsService.deleteOrderDetail(id);
     }
 }

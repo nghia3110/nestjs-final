@@ -31,10 +31,8 @@ export class OrdersController {
     @Get()
     @HttpCode(200)
     async getListOrders(
-        @Query('page') page?: string,
-        @Query('limit') limit?: string) {
-        const paginateInfo = { page, limit } as GetListDto;
-        return await this.ordersService.getListOrders(paginateInfo);
+        @Query() query: GetListDto) {
+        return await this.ordersService.getListOrders(query);
     }
 
     @ApiOperation({ summary: 'API get order by Id' })
@@ -80,6 +78,6 @@ export class OrdersController {
     @Delete('/:id')
     @HttpCode(200)
     async deleteOrder(@UuidParam('id') id: string, @Store() store: TStore) {
-        await this.ordersService.deleteOrder(id, store);
+        return await this.ordersService.deleteOrder(id, store);
     }
 }

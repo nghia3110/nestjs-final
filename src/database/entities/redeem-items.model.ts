@@ -22,7 +22,7 @@ export class RedeemItem extends BaseModel {
     @Column({
         type: DataType.DOUBLE
     })
-    exchange_point: number;
+    exchangePoint: number;
 
     @Column
     expiredTime: Date

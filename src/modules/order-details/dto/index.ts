@@ -1,1 +1,1 @@
-export * from './method-details.dto';
+export * from './order-details.dto';

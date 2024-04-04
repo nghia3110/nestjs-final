@@ -15,6 +15,7 @@ import { GetListDto } from 'src/database';
 import { TStore } from 'src/types';
 import { AdminGuard, Store, StoreGuard, UuidParam } from 'src/utils';
 import {
+    CreateArrayItemDto,
     CreateItemDto,
     UpdateItemDto,
 } from './dto';
@@ -31,10 +32,8 @@ export class ItemsController {
     @Get()
     @HttpCode(200)
     async getListItems(
-        @Query('page') page?: string,
-        @Query('limit') limit?: string) {
-        const paginateInfo = { page, limit } as GetListDto;
-        return await this.itemsService.getListItems(paginateInfo);
+        @Query() query: GetListDto) {
+        return await this.itemsService.getListItems(query);
     }
 
     @ApiOperation({ summary: 'API get item by Id' })
@@ -62,7 +61,7 @@ export class ItemsController {
 
     @ApiOperation({ summary: 'API create item' })
     @ApiBody({
-        type: CreateItemDto,
+        type: CreateArrayItemDto,
         required: true,
         description: 'Store create item'
     })
@@ -70,7 +69,7 @@ export class ItemsController {
     @UseGuards(StoreGuard)
     @Post('/create-many')
     @HttpCode(201)
-    async createManyItems(@Body() payload: CreateItemDto[], @Store() store: TStore) {
+    async createManyItems(@Body() payload: CreateArrayItemDto, @Store() store: TStore) {
         return await this.itemsService.createManyItems(payload, store);
     }
 
@@ -94,6 +93,6 @@ export class ItemsController {
     @Delete('/:id')
     @HttpCode(200)
     async deleteItem(@UuidParam('id') id: string, @Store() store: TStore) {
-        await this.itemsService.deleteItem(id, store);
+        return await this.itemsService.deleteItem(id, store);
     }
 }

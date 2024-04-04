@@ -1,11 +1,10 @@
 import { Injectable } from "@nestjs/common";
-import { BulkCreateOptions } from "sequelize";
 import { ITEM } from "src/constants";
-import { GetListDto, Item, Store } from "src/database";
+import { GetListDto, Item, OrderDetail, Store } from "src/database";
 import { IMessageResponse, IPaginationRes } from "src/interfaces";
 import { TStore } from "src/types";
 import { ErrorHelper } from "src/utils";
-import { CreateItemDto, UpdateItemDto, UpdateItemQuantityDto } from "./dto";
+import { CreateArrayItemDto, CreateItemDto, UpdateItemDto } from "./dto";
 import { ItemsRepository } from "./items.repository";
 
 @Injectable()
@@ -37,7 +36,6 @@ export class ItemsService {
                 as: 'store',
                 attributes: ['name']
             }],
-            attributes: { exclude: ['storeId'] },
             raw: false,
             nest: true
         });
@@ -71,8 +69,8 @@ export class ItemsService {
         });
     }
 
-    async createManyItems(body: CreateItemDto[], store: TStore): Promise<Item[]> {
-        const items = body.map(item => ({
+    async createManyItems(body: CreateArrayItemDto, store: TStore): Promise<Item[]> {
+        const items = body.items.map(item => ({
             ...item,
             storeId: store.id
         }));
@@ -80,8 +78,13 @@ export class ItemsService {
         return this.itemsRepository.bulkCreate(items);
     }
 
-    async bulkCreateItems(body: UpdateItemQuantityDto[], options: BulkCreateOptions<Item>): Promise<Item[]> {
-        return this.itemsRepository.bulkCreate(body, options);
+    async updateItemsQuantity(orderDetails: OrderDetail[]): Promise<void> {
+        for (const detail of orderDetails) {
+            await this.itemsRepository.getModel().decrement('quantityInStock', {
+                by: detail.quantityOrdered,
+                where: { id: detail.itemId },
+            });
+        }
     }
 
     async updateItem(id: string, body: UpdateItemDto, store: TStore): Promise<Item[]> {

@@ -33,10 +33,8 @@ export class StoresController {
     @Get()
     @HttpCode(200)
     async getListStores(
-        @Query('page') page?: string,
-        @Query('limit') limit?: string) {
-        const paginateInfo = { page, limit } as GetListDto;
-        return await this.storesService.getListStores(paginateInfo);
+        @Query() query: GetListDto) {
+        return await this.storesService.getListStores(query);
     }
 
     @ApiOperation({ summary: 'API get users in store' })
@@ -46,11 +44,21 @@ export class StoresController {
     @HttpCode(200)
     async getUsersInStore(
         @Store() store: TStore,
-        @Query('page') page?: string,
-        @Query('limit') limit?: string,
+        @Query() query: GetListDto,
     ) {
-        const paginateInfo = { page, limit } as GetListDto;
-        return await this.storesService.getAllUsersInStore(paginateInfo, store);
+        return await this.storesService.getAllUsersInStore(query, store);
+    }
+
+    @ApiOperation({ summary: 'API get orders in store' })
+    @ApiBearerAuth()
+    @UseGuards(StoreGuard)
+    @Get('/orders')
+    @HttpCode(200)
+    async getOrdersInStore(
+        @Store() store: TStore,
+        @Query() query: GetListDto,
+    ) {
+        return await this.storesService.getAllOrdersInStore(query, store);
     }
 
     @ApiOperation({ summary: 'API get items in store' })
@@ -60,11 +68,9 @@ export class StoresController {
     @HttpCode(200)
     async getItemsInStore(
         @Store() store: TStore,
-        @Query('page') page?: string,
-        @Query('limit') limit?: string,
+        @Query() query: GetListDto,
     ) {
-        const paginateInfo = { page, limit } as GetListDto;
-        return await this.storesService.getAllItemsInStore(paginateInfo, store);
+        return await this.storesService.getAllItemsInStore(query, store);
     }
 
     @ApiOperation({ summary: 'API get redeem items in store' })
@@ -74,11 +80,9 @@ export class StoresController {
     @HttpCode(200)
     async getRedeemItemsInStore(
         @Store() store: TStore,
-        @Query('page') page?: string,
-        @Query('limit') limit?: string,
+        @Query() query: GetListDto,
     ) {
-        const paginateInfo = { page, limit } as GetListDto;
-        return await this.storesService.getAllRedeemItemsInStore(paginateInfo, store);
+        return await this.storesService.getAllRedeemItemsInStore(query, store);
     }
 
     @ApiOperation({ summary: 'API get store by Id' })
@@ -112,7 +116,7 @@ export class StoresController {
     async approveStore(@UuidParam('id') id: string) {
         return await this.storesService.approveStore(id);
     }
-    
+
     @ApiOperation({ summary: 'API complete order' })
     @ApiBearerAuth()
     @UseGuards(StoreGuard)
@@ -142,7 +146,7 @@ export class StoresController {
     @Delete('/:id')
     @HttpCode(200)
     async deleteStore(@UuidParam('id') id: string) {
-        await this.storesService.deleteStore(id);
+        return await this.storesService.deleteStore(id);
     }
 
     @ApiOperation({ summary: 'API login store' })

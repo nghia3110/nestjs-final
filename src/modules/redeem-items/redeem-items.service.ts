@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { GetListDto, RedeemItem, Store } from "src/database";
 import { IMessageResponse, IPaginationRes } from "src/interfaces";
-import { CreateRedeemItemDto, UpdateRedeemItemDto } from "./dto";
+import { CreateArrayRedeemItemDto, CreateRedeemItemDto, UpdateRedeemItemDto } from "./dto";
 import { ErrorHelper } from "src/utils";
 import { ITEM } from "src/constants";
 import { RedeemItemsRepository } from "./redeem-items.repository";
@@ -34,9 +34,8 @@ export class RedeemItemsService {
             include: [{
                 model: Store,
                 as: 'store',
-                attributes: ['id', 'name']
+                attributes: ['name']
             }],
-            attributes: { exclude: ['storeId'] },
             raw: false,
             nest: true
         });
@@ -64,10 +63,6 @@ export class RedeemItemsService {
     }
 
     async createRedeemItem(body: CreateRedeemItemDto, store: TStore): Promise<RedeemItem> {
-        const expiredTime = new Date(body.expiredTime);
-        if(expiredTime < new Date()) {
-            ErrorHelper.BadRequestException(ITEM.INVALID_EXPIRED_TIME);
-        }
         return this.redeemItemsRepository.create(
             {
                 ...body,
@@ -75,8 +70,8 @@ export class RedeemItemsService {
             });
     }
 
-    async createManyRedeemItems(body: CreateRedeemItemDto[], store: TStore): Promise<RedeemItem[]> {
-        const items = body.map(item => ({
+    async createManyRedeemItems(body: CreateArrayRedeemItemDto, store: TStore): Promise<RedeemItem[]> {
+        const items = body.items.map(item => ({
             ...item,
             storeId: store.id
         }));
@@ -87,7 +82,7 @@ export class RedeemItemsService {
     async updateRedeemItem(id: string, body: UpdateRedeemItemDto, store: TStore): Promise<RedeemItem[]> {
         const item = await this.getRedeemItemById(id);
 
-        if(item.storeId !== store.id) {
+        if (item.storeId !== store.id) {
             ErrorHelper.BadRequestException(ITEM.ITEM_NOT_FOUND);
         }
 
@@ -97,14 +92,11 @@ export class RedeemItemsService {
     async deleteRedeemItem(id: string, store: TStore): Promise<IMessageResponse> {
         const item = await this.getRedeemItemById(id);
 
-        if(item.storeId !== store.id) {
+        if (item.storeId !== store.id) {
             ErrorHelper.BadRequestException(ITEM.ITEM_NOT_FOUND);
         }
 
-        const deleteResult = await this.redeemItemsRepository.delete({ where: { id } });
-        if (deleteResult <= 0) {
-            ErrorHelper.BadRequestException(ITEM.DELETE_FAILED);
-        }
+        await this.redeemItemsRepository.delete({ where: { id } });
         return {
             message: ITEM.DELETE_SUCCESS
         }

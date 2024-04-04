@@ -34,10 +34,8 @@ export class UsersController {
   @Get()
   @HttpCode(200)
   async getListUsers(
-    @Query('page') page?: string,
-    @Query('limit') limit?: string) {
-    const paginateInfo = { page, limit } as GetListDto;
-    return await this.usersService.getListUsers(paginateInfo);
+    @Query() query: GetListDto) {
+    return await this.usersService.getListUsers(query);
   }
 
   @ApiOperation({ summary: 'API get user by Id' })
