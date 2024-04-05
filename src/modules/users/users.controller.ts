@@ -119,9 +119,7 @@ export class UsersController {
   async sendOtp(@Body() payload: SendUserOTPDto) {
     const { phoneNumber, hash } = payload;
     const result = await this.usersService.sendOTP(phoneNumber, hash);
-    return {
-      result
-    };
+    return result;
   }
 
   @ApiOperation({ summary: 'API verify OTP' })
@@ -135,25 +133,6 @@ export class UsersController {
   async verifyOtp(@Body() payload: VerifyUserOTPDto) {
     const { otp, hash } = payload;
     const result = await this.usersService.verifyOTP(otp, hash);
-    return {
-      hash: result,
-    };
-  }
-
-  // @ApiBearerAuth()
-  @ApiOperation({ summary: 'API reset your password' })
-  @ApiBody({
-    type: ForgetPasswordDto,
-    required: true,
-    description: 'Forget password',
-  })
-  @Post('/forget-password')
-  @HttpCode(200)
-  async forgetPassword(@Body() payload: ForgetPasswordDto) {
-    const { newPassword, hash } = payload;
-    const result = await this.usersService.forgetPassword(newPassword, hash);
-    return {
-      status: result,
-    };
+    return result;
   }
 }

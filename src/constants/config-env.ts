@@ -54,3 +54,6 @@ export const ADMIN_EMAIL_NAME = process.env.ADMIN_EMAIL_NAME || 'abc+=123';
 export const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID || '';
 export const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN || '';
 export const TWILIO_PHONE_NUMBER = process.env.TWILIO_PHONE_NUMBER || '';
+
+export const VONAGE_API_SECRET = process.env.VONAGE_API_SECRET || '';
+export const VONAGE_API_KEY = process.env.VONAGE_API_KEY || '';

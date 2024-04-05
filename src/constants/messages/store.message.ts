@@ -6,5 +6,6 @@ export const STORE = {
     STORE_NOT_VERIFIED: 'Your account is not verified. Please use OTP send to your email or get the OTP again!',
     DELETE_SUCCESS: 'Delete store successfully!',
     DELETE_FAILED: 'Delete store failed!',
-    COMPLETE_ORDER_SUCCESS: 'Complete order successfully!'
+    COMPLETE_ORDER_SUCCESS: 'Complete order successfully!',
+    
 }
