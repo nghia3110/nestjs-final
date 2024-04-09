@@ -16,6 +16,8 @@ import { RanksModule } from './modules/ranks/ranks.module';
 import { IoRedisModule } from './utils';
 import { RedeemItemsModule } from './modules/redeem-items';
 import { SmsModule } from './modules/sms/sms.module';
+import { RedeemsModule } from './modules/redeems';
+import { RedeemDetailsModule } from './modules/redeem-details';
 
 
 @Module({
@@ -31,6 +33,8 @@ import { SmsModule } from './modules/sms/sms.module';
     MethodDetailsModule,
     ItemsModule,
     RedeemItemsModule,
+    RedeemsModule,
+    RedeemDetailsModule,
     PostgresqlModule,
     SmsModule
   ],

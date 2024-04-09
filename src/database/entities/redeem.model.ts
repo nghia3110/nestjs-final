@@ -3,6 +3,7 @@ import { User } from "./users.model";
 import { RedeemItem } from "./redeem-items.model";
 import { RedeemDetail } from "./redeem-details.model";
 import { BaseModel } from "../base.model";
+import { Store } from "./stores.model";
 
 @Table({
     tableName: 'redeem',
@@ -18,8 +19,17 @@ export class Redeem extends BaseModel {
     })
     userId: string;
 
+    @ForeignKey(() => Store)
+    @Column({
+        type: DataType.UUID
+    })
+    storeId: string;
+
     @BelongsTo(() => User)
     user: User;
+
+    @BelongsTo(() => Store)
+    store: Store;
 
     @BelongsToMany(() => RedeemItem, () => RedeemDetail)
     redeemItems: RedeemItem[];

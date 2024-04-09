@@ -11,22 +11,26 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 
-import { AdminGuard, UuidParam } from 'src/utils';
+import { GetListDto } from 'src/database';
+import { TUser } from 'src/types';
+import { AdminGuard, User, UserGuard, UuidParam } from 'src/utils';
+import { RedeemsService } from '../redeems';
 import {
   CreateUserDto,
-  ForgetPasswordDto,
   LoginUserDto,
   SendUserOTPDto,
   UpdateUserDto,
   VerifyUserOTPDto
 } from './dto';
 import { UsersService } from './users.service';
-import { GetListDto } from 'src/database';
 
 @ApiTags('users')
 @Controller('users')
 export class UsersController {
-  constructor(private usersService: UsersService) { }
+  constructor(
+    private usersService: UsersService,
+    private readonly redeemsService: RedeemsService
+  ) { }
 
   @ApiOperation({ summary: 'API get list users' })
   @ApiBearerAuth()
@@ -36,6 +40,24 @@ export class UsersController {
   async getListUsers(
     @Query() query: GetListDto) {
     return await this.usersService.getListUsers(query);
+  }
+
+  @ApiOperation({ summary: 'API get redeem by user' })
+  @ApiBearerAuth()
+  @UseGuards(UserGuard)
+  @Get('/redeems')
+  @HttpCode(200)
+  async getRedeemsByUser(@Query() query: GetListDto, @User() user: TUser) {
+    return await this.redeemsService.getRedeemsByUser(query, user.id);
+  }
+
+  @ApiOperation({ summary: 'API complete redeem' })
+  @ApiBearerAuth()
+  @UseGuards(UserGuard)
+  @Put('/complete-redeem/:redeemId')
+  @HttpCode(201)
+  async completeOrder(@UuidParam('redeemId') redeemId: string, @User() user: TUser) {
+    return await this.usersService.completeRedeem(redeemId, user.id);
   }
 
   @ApiOperation({ summary: 'API get user by Id' })
@@ -97,16 +119,16 @@ export class UsersController {
   }
 
   @ApiOperation({ summary: 'API register user' })
-    @ApiBody({
-        type: CreateUserDto,
-        required: true,
-        description: 'Register user'
-    })
-    @Post("/register")
-    @HttpCode(201)
-    async register(@Body() payload: CreateUserDto) {
-        return await this.usersService.register(payload);
-    }
+  @ApiBody({
+    type: CreateUserDto,
+    required: true,
+    description: 'Register user'
+  })
+  @Post("/register")
+  @HttpCode(201)
+  async register(@Body() payload: CreateUserDto) {
+    return await this.usersService.register(payload);
+  }
 
   @ApiOperation({ summary: 'API send OTP' })
   @ApiBody({

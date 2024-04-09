@@ -1,4 +1,4 @@
-import { Inject, Injectable, forwardRef } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import moment from 'moment';
 
 import {
@@ -7,13 +7,23 @@ import {
   APPLICATION,
   EPromotePoint,
   ERank,
+  EStatus,
   OTP,
   OTP_TIME_EXPIRE,
+  REDEEM,
   REFRESH_TOKEN_EXPIRE_TIME,
   REFRESH_TOKEN_SECRET_KEY,
   USER,
 } from 'src/constants';
-import { IHashAuthData, IHashResponse, IMessageResponse, IPaginationRes, IToken, IVerifyOTPData, TVerifyOTPRes } from 'src/interfaces';
+import {
+  IHashAuthData,
+  IHashResponse,
+  IMessageResponse,
+  IPaginationRes,
+  IToken,
+  IVerifyOTPData,
+  TVerifyOTPRes
+} from 'src/interfaces';
 import {
   CommonHelper,
   EncryptHelper,
@@ -22,21 +32,27 @@ import {
 } from 'src/utils/helpers';
 
 import { Op } from 'sequelize';
-import { GetListDto, Rank, User } from 'src/database';
-import { OrdersService } from '../orders/orders.service';
+import { Sequelize } from 'sequelize-typescript';
+import { GetListDto, Rank, Redeem, User } from 'src/database';
 import { RanksService } from '../ranks/ranks.service';
+import {
+  CreateRedeemDto,
+  RedeemsService
+} from '../redeems';
+import { SmsService } from '../sms/sms.service';
+import { StoresService } from '../stores';
 import { CreateUserDto, LoginUserDto, UpdateUserDto } from './dto';
 import { UsersRepository } from './users.repository';
-import { SmsService } from '../sms/sms.service';
 
 @Injectable()
 export class UsersService {
   constructor(
     private readonly usersRepository: UsersRepository,
     private readonly ranksService: RanksService,
-    @Inject(forwardRef(() => OrdersService))
-    private readonly ordersService: OrdersService,
-    private readonly smsService: SmsService
+    private readonly storesService: StoresService,
+    private readonly redeemsService: RedeemsService,
+    private readonly smsService: SmsService,
+    private sequelize: Sequelize,
   ) { }
 
   async getListUsers(paginateInfo: GetListDto): Promise<IPaginationRes<User>> {
@@ -70,6 +86,23 @@ export class UsersService {
       ErrorHelper.BadRequestException(USER.USER_NOT_FOUND);
     }
     return user;
+  }
+
+  async getUsersByIds(userIds: string[], paginateInfo: GetListDto): Promise<IPaginationRes<User>> {
+    const { page, limit } = paginateInfo;
+    return this.usersRepository.paginate(parseInt(page), parseInt(limit), {
+      where: {
+        id: { [Op.in]: userIds }
+      },
+      include: [{
+        model: Rank,
+        as: 'rank',
+        attributes: ['name']
+      }],
+      attributes: { exclude: ['password', 'rankId'] },
+      raw: false,
+      nest: true
+    });
   }
 
   async checkConflictInfo(email: string, phoneNumber: string): Promise<void> {
@@ -126,25 +159,54 @@ export class UsersService {
     }
   }
 
-  async getUsersByStore(storeId: string, paginateInfo: GetListDto): Promise<IPaginationRes<User>> {
-    const orders = await this.ordersService.getOrdersByStore(storeId);
+  async createRedeem(body: CreateRedeemDto, userId: string): Promise<Redeem> {
+    await this.storesService.getStoreById(body.storeId);
 
-    const userIds = orders.map(order => order.userId);
+    return this.redeemsService.createRedeem(body, userId);
+  }
 
-    const { page, limit } = paginateInfo;
-    return this.usersRepository.paginate(parseInt(page), parseInt(limit), {
-      where: {
-        id: { [Op.in]: userIds }
-      },
-      include: [{
-        model: Rank,
-        as: 'rank',
-        attributes: ['name']
-      }],
-      attributes: { exclude: ['password', 'rankId'] },
-      raw: false,
-      nest: true
-    });
+  async completeRedeem(redeemId: string, userId: string): Promise<IMessageResponse> {
+    const redeem = await this.redeemsService.getRedeemById(redeemId);
+
+    if (redeem.userId !== userId) {
+      ErrorHelper.BadRequestException(REDEEM.REDEEM_NOT_FOUND);
+    }
+
+    if (redeem.status === EStatus.SUCCESS) {
+      ErrorHelper.BadRequestException(REDEEM.REDEEM_ALREADY_SUCCESS);
+    }
+
+    const user = await this.getUserById(redeem.userId);
+
+    const transaction = await this.sequelize.transaction();
+    try {
+      const totalPoints = await this.redeemsService.calcRedeemPoints(redeemId);
+
+      if (totalPoints > user.currentPoints) {
+        ErrorHelper.BadRequestException(REDEEM.COMPLETE_REDEEM_FAILED);
+      }
+
+      await this.redeemsService.updateRedeem(
+        redeemId,
+        {
+          status: EStatus.SUCCESS
+        },
+        user.id);
+
+      await this.updateUser(user.id, {
+        currentPoints: user.currentPoints - totalPoints
+      });
+
+      await this.checkPromoteRank(user.id);
+
+      await transaction.commit();
+      return {
+        message: REDEEM.COMPLETE_REDEEM_SUCCESS
+      }
+    } catch (error) {
+      await transaction.rollback();
+      ErrorHelper.BadRequestException(error);
+    }
   }
 
   async checkPromoteRank(userId: string): Promise<void> {

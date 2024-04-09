@@ -5,7 +5,7 @@ import { ErrorHelper } from "src/utils";
 import { METHOD, METHOD_DETAIL } from "src/constants";
 import { IMessageResponse, IPaginationRes } from "src/interfaces";
 import { CreateMethodDetailDto, UpdateMethodDetailDto } from "./dto";
-import { MethodsService } from "../methods/methods.service";
+import { MethodsService } from "../methods";
 import { RanksService } from "../ranks/ranks.service";
 
 @Injectable()

@@ -2,23 +2,21 @@ import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { Store } from 'src/database';
 
+import { ItemsModule } from '../items';
+import { MethodsModule } from '../methods/methods.module';
+import { OrdersModule } from '../orders';
+import { RedeemItemsModule } from '../redeem-items';
+import { UserOrderModule } from '../user-order';
+import { StoresController } from './stores.controller';
 import { StoresRepository } from './stores.repository';
 import { StoresService } from './stores.service';
-import { MethodsModule } from '../methods/methods.module';
-import { StoresController } from './stores.controller';
-import { OrdersModule } from '../orders';
-import { UsersModule } from '../users';
-import { MethodDetailsModule } from '../method-details';
-import { RedeemItemsModule } from '../redeem-items';
-import { ItemsModule } from '../items';
 
 @Module({
     imports: [
         SequelizeModule.forFeature([Store]),
-        MethodsModule,
         OrdersModule,
-        UsersModule, 
-        MethodDetailsModule,
+        UserOrderModule,
+        MethodsModule,
         ItemsModule,
         RedeemItemsModule
     ],
