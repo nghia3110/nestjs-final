@@ -15,6 +15,12 @@ import { GetListDto } from 'src/database';
 import { TStore } from 'src/types';
 import { AdminGuard, Store, StoreGuard, UuidParam } from 'src/utils';
 import {
+    CreateManyDetailsDto,
+    CreateOrderDetailDto,
+    OrderDetailsService,
+    UpdateOrderDetailDto,
+} from '../order-details';
+import {
     CreateOrderDto,
     UpdateOrderDto
 } from './dto';
@@ -23,7 +29,10 @@ import { OrdersService } from './orders.service';
 @ApiTags('orders')
 @Controller('orders')
 export class OrdersController {
-    constructor(private ordersService: OrdersService) { }
+    constructor(
+        private ordersService: OrdersService,
+        private orderDetailsService: OrderDetailsService
+    ) { }
 
     @ApiOperation({ summary: 'API get list orders' })
     @ApiBearerAuth()
@@ -55,7 +64,21 @@ export class OrdersController {
     @Post()
     @HttpCode(201)
     async createOrder(@Body() payload: CreateOrderDto, @Store() store: TStore) {
-        return await this.ordersService.createOrder(payload, store);
+        return await this.ordersService.createOrder(payload, store.id);
+    }
+
+    @ApiOperation({ summary: 'API update order detail' })
+    @ApiBody({
+        type: UpdateOrderDetailDto,
+        required: true,
+        description: 'Update order detail'
+    })
+    @ApiBearerAuth()
+    @UseGuards(StoreGuard)
+    @Put('/order-detail/:id')
+    @HttpCode(201)
+    async updateOrderDetail(@UuidParam('id') id: string, @Body() payload: UpdateOrderDetailDto) {
+        return await this.orderDetailsService.updateOrderDetail(id, payload);
     }
 
     @ApiOperation({ summary: 'API update order' })
@@ -69,7 +92,7 @@ export class OrdersController {
     @Put('/:id')
     @HttpCode(201)
     async updateOrder(@UuidParam('id') id: string, @Body() payload: UpdateOrderDto, @Store() store: TStore) {
-        return await this.ordersService.updateOrder(id, payload, store);
+        return await this.ordersService.updateOrder(id, payload, store.id);
     }
 
     @ApiOperation({ summary: 'API delete order' })
@@ -78,6 +101,34 @@ export class OrdersController {
     @Delete('/:id')
     @HttpCode(200)
     async deleteOrder(@UuidParam('id') id: string, @Store() store: TStore) {
-        return await this.ordersService.deleteOrder(id, store);
+        return await this.ordersService.deleteOrder(id, store.id);
+    }
+
+    @ApiOperation({ summary: 'API create order detail' })
+    @ApiBody({
+        type: CreateOrderDetailDto,
+        required: true,
+        description: 'Create order detail'
+    })
+    @ApiBearerAuth()
+    @UseGuards(StoreGuard)
+    @Post('/order-detail/create')
+    @HttpCode(201)
+    async createOrderDetail(@Body() payload: CreateOrderDetailDto) {
+        return await this.orderDetailsService.createOrderDetail(payload);
+    }
+
+    @ApiOperation({ summary: 'API create order details' })
+    @ApiBody({
+        type: CreateManyDetailsDto,
+        required: true,
+        description: 'Create order details'
+    })
+    @ApiBearerAuth()
+    @UseGuards(StoreGuard)
+    @Post('/order-detail/create-many')
+    @HttpCode(201)
+    async createManyOrderDetails(@Body() payload: CreateManyDetailsDto) {
+        return await this.orderDetailsService.createManyOrderDetails(payload);
     }
 }

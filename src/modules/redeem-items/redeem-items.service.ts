@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { GetListDto, RedeemItem, Store } from "src/database";
+import { GetListDto, RedeemDetail, RedeemItem, Store } from "src/database";
 import { IMessageResponse, IPaginationRes } from "src/interfaces";
 import { CreateArrayRedeemItemDto, CreateRedeemItemDto, UpdateRedeemItemDto } from "./dto";
 import { ErrorHelper } from "src/utils";
@@ -99,6 +99,15 @@ export class RedeemItemsService {
         await this.redeemItemsRepository.delete({ where: { id } });
         return {
             message: ITEM.DELETE_SUCCESS
+        }
+    }
+
+    async updateRedeemItemsQuantity(redeemDetails: RedeemDetail[]): Promise<void> {
+        for (const detail of redeemDetails) {
+            await this.redeemItemsRepository.getModel().decrement('quantity', {
+                by: detail.quantityRedeem,
+                where: { id: detail.itemId },
+            });
         }
     }
 }

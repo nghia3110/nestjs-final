@@ -3,5 +3,6 @@ export const ORDER = {
     DELETE_SUCCESS: 'Delete order successfully!',
     DELETE_FAILED: 'Delete order failed!',
     STATUS_NOT_CHANGED: 'Please change the order status!',
-    ORDER_ALREADY_SUCCESS: 'This order is already success!'
+    ORDER_ALREADY_SUCCESS: 'This order is already success!',
+    COMPLETE_ORDER_SUCCESS: 'Complete order successfully!',
 }
