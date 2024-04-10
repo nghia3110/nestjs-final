@@ -8,7 +8,6 @@ import { BaseModel } from "../base.model";
     underscored: true
 })
 export class RedeemDetail extends BaseModel {
-    @ForeignKey(() => Redeem)
     @Column({
         type: DataType.UUID
     })
@@ -20,6 +19,7 @@ export class RedeemDetail extends BaseModel {
     })
     itemId: string;
 
+    @ForeignKey(() => Redeem)
     @Column({
         type: DataType.INTEGER
     })
