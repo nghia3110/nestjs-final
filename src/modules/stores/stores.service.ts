@@ -2,10 +2,9 @@ import { Injectable } from "@nestjs/common";
 import md5 from 'md5';
 import moment from "moment";
 
+import { Sequelize } from "sequelize-typescript";
 import {
     ACCESS_TOKEN_EXPIRE_TIME,
-    ACCESS_TOKEN_SECRET_KEY,
-    AMOUNT_INCREASE_POINT,
     APPLICATION, EMAIL,
     EStatus,
     ORDER,
@@ -20,12 +19,7 @@ import {
 import {
     AccumulateMethod,
     GetListDto,
-    Item,
-    MethodDetail,
-    Order,
-    RedeemItem,
     Store,
-    User
 } from "src/database";
 import {
     IHashResponse,
@@ -33,9 +27,7 @@ import {
     IMessageResponse,
     IPaginationRes,
     IToken,
-    IVerifyOTPResponse
 } from "src/interfaces";
-import { TStore } from "src/types";
 import {
     CommonHelper,
     EncryptHelper,
@@ -43,12 +35,9 @@ import {
     SendEmailHelper,
     TokenHelper
 } from "src/utils";
-import { ItemsService } from "../items/items.service";
-import { MethodDetailsService } from "../method-details/method-details.service";
-import { MethodsService } from "../methods/methods.service";
-import { OrdersService } from "../orders/orders.service";
-import { RedeemItemsService } from "../redeem-items/redeem-items.service";
-import { UsersService } from "../users/users.service";
+import { MethodsService } from "../methods";
+import { OrdersService } from "../orders";
+import { UserOrderService } from "../user-order";
 import { CreateStoreDto, UpdateStoreDto } from "./dto";
 import { LoginDto } from "./dto/login.dto";
 import { StoresRepository } from "./stores.repository";
@@ -58,11 +47,9 @@ export class StoresService {
     constructor(
         private readonly storesRepository: StoresRepository,
         private readonly methodsService: MethodsService,
-        private readonly usersService: UsersService,
         private readonly ordersService: OrdersService,
-        private readonly methodDetailsService: MethodDetailsService,
-        private readonly itemsService: ItemsService,
-        private readonly redeemItemsService: RedeemItemsService
+        private userOrderService: UserOrderService,
+        private sequelize: Sequelize
     ) { }
 
     async getListStores(paginateInfo: GetListDto): Promise<IPaginationRes<Store>> {
@@ -169,78 +156,31 @@ export class StoresService {
         return this.storesRepository.update({ isApproved: true }, { where: { id } });
     }
 
-    async getAllUsersInStore(paginateInfo: GetListDto, store: TStore): Promise<IPaginationRes<User>> {
-        return this.usersService.getUsersByStore(store.id, paginateInfo);
-    }
-
-    async getAllOrdersInStore(paginateInfo: GetListDto, store: TStore): Promise<IPaginationRes<Order>> {
-        return this.ordersService.paginateOrdersInStore(store.id, paginateInfo);
-    }
-
-    async getAllItemsInStore(paginateInfo: GetListDto, store: TStore): Promise<IPaginationRes<Item>> {
-        return this.itemsService.getItemsByStore(store.id, paginateInfo);
-    }
-
-    async getAllRedeemItemsInStore(paginateInfo: GetListDto, store: TStore): Promise<IPaginationRes<RedeemItem>> {
-        return this.redeemItemsService.getRedeemItemsByStore(store.id, paginateInfo);
-    }
-
-    async completeOrder(orderId: string, storePayload: TStore): Promise<IMessageResponse> {
+    async completeOrder(orderId: string, storeId: string): Promise<IMessageResponse> {
         const order = await this.ordersService.getOrderById(orderId);
 
-        if (order.storeId !== storePayload.id) {
+        if (order.storeId !== storeId) {
             ErrorHelper.BadRequestException(ORDER.ORDER_NOT_FOUND);
         }
 
-        if(order.status === EStatus.SUCCESS) {
+        if (order.status === EStatus.SUCCESS) {
             ErrorHelper.BadRequestException(ORDER.ORDER_ALREADY_SUCCESS);
         }
 
-        const [user, store] = await Promise.all([
-            this.usersService.getUserById(order.userId),
-            this.getStoreById(order.storeId)
-        ]);
+        const store = await this.getStoreById(storeId);
 
-        const orderAmount = await this.ordersService.calcOrderAmount(orderId);
+        const transaction = await this.sequelize.transaction();
+        try {
+            await this.userOrderService.processOrder(orderId, store, order.userId);
 
-        await this.ordersService.updateOrder(order.id,
-            {
-                status: EStatus.SUCCESS
-            },
-            storePayload);
-
-        const amount = orderAmount.totalAmount;
-        const methodDetail = await this.methodDetailsService.getMethodDetail(store.methodId, user.rankId);
-        const bonusPoints = this.calculatePoints(methodDetail, amount);
-
-        await this.usersService.updateUser(user.id, {
-            totalPoints: user.totalPoints + bonusPoints,
-            currentPoints: user.currentPoints + bonusPoints
-        });
-
-        await this.usersService.checkPromoteRank(user.id);
-
-        return {
-            message: STORE.COMPLETE_ORDER_SUCCESS
-        }
-    }
-
-    private calculatePoints(methodDetail: MethodDetail, amount: number): number {
-        let bonusPoints: number;
-
-        if (methodDetail.fixedPoint > 0) {
-            bonusPoints = Math.floor(amount / AMOUNT_INCREASE_POINT) * methodDetail.fixedPoint;
-        } else {
-            if (amount < AMOUNT_INCREASE_POINT) {
-                bonusPoints = Math.min(methodDetail.maxPoint, Math.round(amount * 0.001) * (methodDetail.percentage / 100));
-            } else {
-                const r = Math.floor(amount / AMOUNT_INCREASE_POINT);
-                bonusPoints = methodDetail.maxPoint * r +
-                    Math.min(methodDetail.maxPoint, Math.round((amount - r * AMOUNT_INCREASE_POINT) * 0.001) * (methodDetail.percentage / 100));
+            await transaction.commit();
+            return {
+                message: ORDER.COMPLETE_ORDER_SUCCESS
             }
+        } catch (error) {
+            await transaction.rollback();
+            ErrorHelper.BadRequestException(error);
         }
-
-        return Math.round(bonusPoints);
     }
 
     async register(body: CreateStoreDto): Promise<IHashResponse> {
@@ -345,7 +285,7 @@ export class StoresService {
         };
     }
 
-    async verifyOTP(otp: string, hash: string): Promise<IVerifyOTPResponse> {
+    async verifyOTP(otp: string, hash: string): Promise<IMessageResponse> {
         const checkHashInfo = CommonHelper.checkHashData(hash);
         if (!checkHashInfo) {
             ErrorHelper.BadRequestException(APPLICATION.VERIFY_FAIL);
@@ -370,8 +310,7 @@ export class StoresService {
                 }
             });
         return {
-            email: hashInfo.email,
-            isVerified: true
-        }
+            message: APPLICATION.VERIFY_OTP_SUCCESS
+        };
     }
 }

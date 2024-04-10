@@ -11,22 +11,26 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 
-import { AdminGuard, UuidParam } from 'src/utils';
+import { GetListDto } from 'src/database';
+import { TUser } from 'src/types';
+import { AdminGuard, User, UserGuard, UuidParam } from 'src/utils';
+import { RedeemsService } from '../redeems';
 import {
   CreateUserDto,
-  ForgetPasswordDto,
-  LoginDto,
-  SendOTPDto,
+  LoginUserDto,
+  SendUserOTPDto,
   UpdateUserDto,
-  VerifyOTPDto
+  VerifyUserOTPDto
 } from './dto';
 import { UsersService } from './users.service';
-import { GetListDto } from 'src/database';
 
 @ApiTags('users')
 @Controller('users')
 export class UsersController {
-  constructor(private usersService: UsersService) { }
+  constructor(
+    private usersService: UsersService,
+    private readonly redeemsService: RedeemsService
+  ) { }
 
   @ApiOperation({ summary: 'API get list users' })
   @ApiBearerAuth()
@@ -36,6 +40,24 @@ export class UsersController {
   async getListUsers(
     @Query() query: GetListDto) {
     return await this.usersService.getListUsers(query);
+  }
+
+  @ApiOperation({ summary: 'API get redeem by user' })
+  @ApiBearerAuth()
+  @UseGuards(UserGuard)
+  @Get('/redeems')
+  @HttpCode(200)
+  async getRedeemsByUser(@Query() query: GetListDto, @User() user: TUser) {
+    return await this.redeemsService.getRedeemsByUser(query, user.id);
+  }
+
+  @ApiOperation({ summary: 'API complete redeem' })
+  @ApiBearerAuth()
+  @UseGuards(UserGuard)
+  @Put('/complete-redeem/:redeemId')
+  @HttpCode(201)
+  async completeOrder(@UuidParam('redeemId') redeemId: string, @User() user: TUser) {
+    return await this.usersService.completeRedeem(redeemId, user.id);
   }
 
   @ApiOperation({ summary: 'API get user by Id' })
@@ -86,62 +108,53 @@ export class UsersController {
 
   @ApiOperation({ summary: 'API Login' })
   @ApiBody({
-    type: LoginDto,
+    type: LoginUserDto,
     required: true,
     description: 'Login user',
   })
   @Post('/login')
   @HttpCode(200)
-  async login(@Body() payload: LoginDto) {
+  async login(@Body() payload: LoginUserDto) {
     return this.usersService.login(payload);
+  }
+
+  @ApiOperation({ summary: 'API register user' })
+  @ApiBody({
+    type: CreateUserDto,
+    required: true,
+    description: 'Register user'
+  })
+  @Post("/register")
+  @HttpCode(201)
+  async register(@Body() payload: CreateUserDto) {
+    return await this.usersService.register(payload);
   }
 
   @ApiOperation({ summary: 'API send OTP' })
   @ApiBody({
-    type: SendOTPDto,
+    type: SendUserOTPDto,
     required: true,
     description: 'Send OTP',
   })
   @Post('/send-otp')
   @HttpCode(200)
-  async sendOtp(@Body() payload: SendOTPDto) {
-    const { email, hash } = payload;
-    const result = await this.usersService.sendOTP(email, hash);
-    return {
-      hash: result,
-    };
+  async sendOtp(@Body() payload: SendUserOTPDto) {
+    const { phoneNumber, hash } = payload;
+    const result = await this.usersService.sendOTP(phoneNumber, hash);
+    return result;
   }
 
   @ApiOperation({ summary: 'API verify OTP' })
   @ApiBody({
-    type: VerifyOTPDto,
+    type: VerifyUserOTPDto,
     required: true,
     description: 'Verify OTP',
   })
   @Post('/verify-otp')
   @HttpCode(200)
-  async verifyOtp(@Body() payload: VerifyOTPDto) {
+  async verifyOtp(@Body() payload: VerifyUserOTPDto) {
     const { otp, hash } = payload;
     const result = await this.usersService.verifyOTP(otp, hash);
-    return {
-      hash: result,
-    };
-  }
-
-  // @ApiBearerAuth()
-  @ApiOperation({ summary: 'API reset your password' })
-  @ApiBody({
-    type: ForgetPasswordDto,
-    required: true,
-    description: 'Forget password',
-  })
-  @Post('/forget-password')
-  @HttpCode(200)
-  async forgetPassword(@Body() payload: ForgetPasswordDto) {
-    const { newPassword, hash } = payload;
-    const result = await this.usersService.forgetPassword(newPassword, hash);
-    return {
-      status: result,
-    };
+    return result;
   }
 }

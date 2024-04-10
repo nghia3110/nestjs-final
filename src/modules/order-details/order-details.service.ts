@@ -1,10 +1,9 @@
-import { Inject, Injectable, forwardRef } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { EStatus, ORDER_DETAIL } from "src/constants";
-import { GetListDto, Item, OrderDetail, User } from "src/database";
+import { GetListDto, Item, OrderDetail } from "src/database";
 import { IMessageResponse, IPaginationRes } from "src/interfaces";
 import { ErrorHelper } from "src/utils";
-import { ItemsService } from "../items/items.service";
-import { OrdersService } from "../orders/orders.service";
+import { ItemsService } from "../items";
 import { CreateManyDetailsDto, CreateOrderDetailDto, UpdateOrderDetailDto } from "./dto";
 import { OrderDetailsRepository } from "./order-details.repository";
 import { Op } from "sequelize";
@@ -13,9 +12,6 @@ import { Op } from "sequelize";
 export class OrderDetailsService {
     constructor(
         private readonly orderDetailsRepository: OrderDetailsRepository,
-        @Inject(forwardRef(() => OrdersService))
-        private readonly ordersService: OrdersService,
-        @Inject(forwardRef(() => ItemsService))
         private readonly itemsService: ItemsService
     ) { }
 
@@ -23,11 +19,6 @@ export class OrderDetailsService {
         const { page, limit } = paginateInfo;
         return this.orderDetailsRepository.paginate(parseInt(page), parseInt(limit), {
             include: [
-                {
-                    model: User,
-                    as: 'user',
-                    attributes: ['firstName', 'lastName']
-                },
                 {
                     model: Item,
                     as: 'item',
@@ -69,8 +60,6 @@ export class OrderDetailsService {
     }
 
     async createOrderDetail(body: CreateOrderDetailDto): Promise<OrderDetail> {
-        await this.ordersService.getOrderById(body.orderId);
-
         const item = await this.itemsService.getItemById(body.itemId);
 
         if (body.quantityOrdered > item.quantityInStock) {
@@ -81,28 +70,29 @@ export class OrderDetailsService {
     }
 
     async createManyOrderDetails(body: CreateManyDetailsDto): Promise<OrderDetail[]> {
-        await this.ordersService.getOrderById(body.orderId);
-
-        const items = body.orderedItems.map(async (orderedItem) => {
+        const errors: string[] = [];
+        const itemsPromise = body.orderedItems.map(async (orderedItem) => {
             const item = await this.itemsService.getItemById(orderedItem.itemId);
             if (orderedItem.quantityOrdered > item.quantityInStock) {
-                ErrorHelper.BadRequestException(ORDER_DETAIL.OVER_QUANTITY(item.name, item.quantityInStock));
+                errors.push(ORDER_DETAIL.OVER_QUANTITY(item.name, item.quantityInStock));
             }
             return {
-                ...item,
+                ...orderedItem,
                 orderId: body.orderId
             }
         });
 
+        const items = await Promise.all(itemsPromise);
+        
+        if(errors.length > 0) {
+            ErrorHelper.BadRequestException(errors.join('\n'));
+        }
+        
         return this.orderDetailsRepository.bulkCreate(items);
     }
 
-    async updateOrderDetail(id: string, body: UpdateOrderDetailDto): Promise<OrderDetail[]> {
-        const orderDetail = await this.getOrderDetailById(id);
-
-        if (body.orderId && body.orderId !== orderDetail.orderId) {
-            await this.ordersService.getOrderById(body.orderId);
-        }
+    async updateOrderDetail(id: string, body: UpdateOrderDetailDto, detail?: OrderDetail): Promise<OrderDetail[]> {
+        const orderDetail = detail ? detail : await this.getOrderDetailById(id);
 
         if (body.itemId && body.itemId !== orderDetail.itemId) {
             await this.itemsService.getItemById(body.itemId);
