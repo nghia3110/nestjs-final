@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
+  IsEmail,
   IsNotEmpty,
-  IsNumberString,
   IsString,
   MaxLength,
   MinLength,
@@ -12,16 +12,16 @@ import {
   REQUIRED_VALIDATE
 } from 'src/constants';
 
-export class LoginUserDto {
+export class LoginDto {
+  @IsEmail()
   @IsString()
-  @IsNumberString()
-  @IsNotEmpty({ message: REQUIRED_VALIDATE('phone number') })
+  @IsNotEmpty({ message: REQUIRED_VALIDATE('email') })
   @ApiProperty({
     type: String,
-    description: 'Your phone number',
-    example: '0123456789',
+    description: 'Your email',
+    example: 'example@gmail.com',
   })
-  phoneNumber: string;
+  email: string;
 
   @IsString()
   @MaxLength(32, { message: MAX_LENGTH_VALIDATE('password', 32) })

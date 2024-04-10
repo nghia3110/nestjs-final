@@ -7,7 +7,6 @@ export const APPLICATION = {
   PHONE_NOT_EXIST: 'This phone number does not exist !',
   HASH_IS_NOT_CORRECT: 'Hash is not correct. Please try again',
   VERIFY_FAIL: 'Authentication failed. Please try again',
-  VERIFY_OTP_SUCCESS: 'Verify OTP success!'
 };
 
 export const EMAIL = {

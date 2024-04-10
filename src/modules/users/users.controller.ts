@@ -15,10 +15,10 @@ import { AdminGuard, UuidParam } from 'src/utils';
 import {
   CreateUserDto,
   ForgetPasswordDto,
-  LoginUserDto,
-  SendUserOTPDto,
+  LoginDto,
+  SendOTPDto,
   UpdateUserDto,
-  VerifyUserOTPDto
+  VerifyOTPDto
 } from './dto';
 import { UsersService } from './users.service';
 import { GetListDto } from 'src/database';
@@ -86,53 +86,62 @@ export class UsersController {
 
   @ApiOperation({ summary: 'API Login' })
   @ApiBody({
-    type: LoginUserDto,
+    type: LoginDto,
     required: true,
     description: 'Login user',
   })
   @Post('/login')
   @HttpCode(200)
-  async login(@Body() payload: LoginUserDto) {
+  async login(@Body() payload: LoginDto) {
     return this.usersService.login(payload);
   }
 
-  @ApiOperation({ summary: 'API register user' })
-    @ApiBody({
-        type: CreateUserDto,
-        required: true,
-        description: 'Register user'
-    })
-    @Post("/register")
-    @HttpCode(201)
-    async register(@Body() payload: CreateUserDto) {
-        return await this.usersService.register(payload);
-    }
-
   @ApiOperation({ summary: 'API send OTP' })
   @ApiBody({
-    type: SendUserOTPDto,
+    type: SendOTPDto,
     required: true,
     description: 'Send OTP',
   })
   @Post('/send-otp')
   @HttpCode(200)
-  async sendOtp(@Body() payload: SendUserOTPDto) {
-    const { phoneNumber, hash } = payload;
-    const result = await this.usersService.sendOTP(phoneNumber, hash);
-    return result;
+  async sendOtp(@Body() payload: SendOTPDto) {
+    const { email, hash } = payload;
+    const result = await this.usersService.sendOTP(email, hash);
+    return {
+      hash: result,
+    };
   }
 
   @ApiOperation({ summary: 'API verify OTP' })
   @ApiBody({
-    type: VerifyUserOTPDto,
+    type: VerifyOTPDto,
     required: true,
     description: 'Verify OTP',
   })
   @Post('/verify-otp')
   @HttpCode(200)
-  async verifyOtp(@Body() payload: VerifyUserOTPDto) {
+  async verifyOtp(@Body() payload: VerifyOTPDto) {
     const { otp, hash } = payload;
     const result = await this.usersService.verifyOTP(otp, hash);
-    return result;
+    return {
+      hash: result,
+    };
+  }
+
+  // @ApiBearerAuth()
+  @ApiOperation({ summary: 'API reset your password' })
+  @ApiBody({
+    type: ForgetPasswordDto,
+    required: true,
+    description: 'Forget password',
+  })
+  @Post('/forget-password')
+  @HttpCode(200)
+  async forgetPassword(@Body() payload: ForgetPasswordDto) {
+    const { newPassword, hash } = payload;
+    const result = await this.usersService.forgetPassword(newPassword, hash);
+    return {
+      status: result,
+    };
   }
 }
