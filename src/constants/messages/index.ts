@@ -5,7 +5,5 @@ export * from './method-detail.message';
 export * from './method.message';
 export * from './order-detail.message';
 export * from './order.message';
-export * from './redeem-detail.message';
-export * from './redeem.message';
 export * from './store.message';
 export * from './user.message';

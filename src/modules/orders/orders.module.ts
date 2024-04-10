@@ -1,19 +1,19 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 
 import { Order } from 'src/database';
-import { ItemsModule } from '../items';
-import { OrderDetailsModule } from '../order-details';
+import { OrderDetailsModule } from '../order-details/order-details.module';
 import { UsersModule } from '../users';
 import { OrdersController } from './orders.controller';
 import { OrdersRepository } from './orders.repository';
 import { OrdersService } from './orders.service';
+import { ItemsModule } from '../items';
 
 @Module({
     imports: [
         SequelizeModule.forFeature([Order]),
-        UsersModule,
-        OrderDetailsModule,
+        forwardRef(() => UsersModule),
+        forwardRef(() => OrderDetailsModule),
         ItemsModule
     ],
     controllers: [OrdersController],

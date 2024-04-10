@@ -1,27 +1,24 @@
 import { Inject, Injectable, forwardRef } from "@nestjs/common";
-import { AMOUNT_INCREASE_POINT, ORDER } from "src/constants";
-import { GetListDto, MethodDetail, Order, OrderDetail, Store, User } from "src/database";
-import { IMessageResponse, IPaginationRes } from "src/interfaces";
+import { ORDER } from "src/constants";
+import { GetListDto, Order, Store, User } from "src/database";
+import { IMessageResponse, IOrderAmount, IPaginationRes } from "src/interfaces";
+import { TStore } from "src/types";
 import { ErrorHelper } from "src/utils";
-import { ItemsService } from "../items";
-import {
-    CreateManyDetailsDto,
-    CreateOrderDetailDto,
-    OrderDetailsService,
-    UpdateOrderDetailDto
-} from "../order-details";
-import { UsersService } from "../users";
+import { OrderDetailsService } from "../order-details/order-details.service";
+import { UsersService } from "../users/users.service";
 import { CreateOrderDto, UpdateOrderDto } from "./dto";
 import { OrdersRepository } from "./orders.repository";
+import { ItemsService } from "../items/items.service";
 
 @Injectable()
 export class OrdersService {
     constructor(
         private readonly ordersRepository: OrdersRepository,
+        @Inject(forwardRef(() => UsersService))
         private readonly usersService: UsersService,
         @Inject(forwardRef(() => OrderDetailsService))
         private readonly orderDetailsService: OrderDetailsService,
-        private readonly itemsService: ItemsService,
+        private readonly itemsService: ItemsService
     ) { }
 
     async getListOrders(paginateInfo: GetListDto): Promise<IPaginationRes<Order>> {
@@ -95,25 +92,7 @@ export class OrdersService {
         });
     }
 
-    calculatePoints(methodDetail: MethodDetail, amount: number): number {
-        let bonusPoints: number;
-
-        if (methodDetail.fixedPoint > 0) {
-            bonusPoints = Math.floor(amount / AMOUNT_INCREASE_POINT) * methodDetail.fixedPoint;
-        } else {
-            if (amount < AMOUNT_INCREASE_POINT) {
-                bonusPoints = Math.min(methodDetail.maxPoint, Math.round(amount * 0.001) * (methodDetail.percentage / 100));
-            } else {
-                const r = Math.floor(amount / AMOUNT_INCREASE_POINT);
-                bonusPoints = methodDetail.maxPoint * r +
-                    Math.min(methodDetail.maxPoint, Math.round((amount - r * AMOUNT_INCREASE_POINT) * 0.001) * (methodDetail.percentage / 100));
-            }
-        }
-
-        return Math.round(bonusPoints);
-    }
-
-    async calcOrderAmount(orderId: string): Promise<number> {
+    async calcOrderAmount(orderId: string): Promise<IOrderAmount> {
         const orderDetails = await this.orderDetailsService.getOrderDetailsByOrder(orderId);
 
         const totalAmount = orderDetails.reduce((total, currentDetail) => {
@@ -126,22 +105,25 @@ export class OrdersService {
 
         await this.orderDetailsService.updateStatusOrderDetails(orderDetailsIds);
 
-        return totalAmount;
+        return {
+            totalAmount
+        }
     }
 
-    async createOrder(body: CreateOrderDto, storeId: string): Promise<Order> {
+    async createOrder(body: CreateOrderDto, store: TStore): Promise<Order> {
         await this.usersService.getUserById(body.userId);
+
         return this.ordersRepository.create(
             {
                 ...body,
-                storeId,
+                storeId: store.id,
             }
         )
     }
 
-    async updateOrder(id: string, body: UpdateOrderDto, storeId: string): Promise<Order[]> {
+    async updateOrder(id: string, body: UpdateOrderDto, store: TStore): Promise<Order[]> {
         const order = await this.getOrderById(id);
-        if (order.storeId !== storeId) {
+        if (order.storeId !== store.id) {
             ErrorHelper.BadRequestException(ORDER.ORDER_NOT_FOUND);
         }
 
@@ -152,9 +134,9 @@ export class OrdersService {
         return this.ordersRepository.update(body, { where: { id } });
     }
 
-    async deleteOrder(id: string, storeId: string): Promise<IMessageResponse> {
+    async deleteOrder(id: string, store: TStore): Promise<IMessageResponse> {
         const order = await this.getOrderById(id);
-        if (order.storeId !== storeId) {
+        if (order.storeId !== store.id) {
             ErrorHelper.BadRequestException(ORDER.ORDER_NOT_FOUND);
         }
 
@@ -165,23 +147,5 @@ export class OrdersService {
         return {
             message: ORDER.DELETE_SUCCESS
         }
-    }
-
-    async createOrderDetail(body: CreateOrderDetailDto): Promise<OrderDetail> {
-        await this.getOrderById(body.orderId);
-        return this.orderDetailsService.createOrderDetail(body);
-    }
-
-    async createManyOrderDetails(body: CreateManyDetailsDto): Promise<OrderDetail[]> {
-        await this.getOrderById(body.orderId);
-        return this.orderDetailsService.createManyOrderDetails(body);
-    }
-
-    async updateOrderDetails(id: string, body: UpdateOrderDetailDto): Promise<OrderDetail[]> {
-        const orderDetail = await this.orderDetailsService.getOrderDetailById(id);
-        if (body.orderId && body.orderId !== orderDetail.orderId) {
-            await this.getOrderById(body.orderId);
-        }
-        return this.orderDetailsService.updateOrderDetail(id, body, orderDetail);
     }
 }
