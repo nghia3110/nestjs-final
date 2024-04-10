@@ -5,9 +5,10 @@ import { IMessageResponse, IPaginationRes } from "src/interfaces";
 import { ErrorHelper } from "src/utils";
 import { ItemsService } from "../items/items.service";
 import { OrdersService } from "../orders/orders.service";
-import { CreateManyDetailsDto, CreateOrderDetailDto, UpdateOrderDetailDto } from "./dto";
+import { CreateOrderDetailDto, UpdateOrderDetailDto } from "./dto";
 import { OrderDetailsRepository } from "./order-details.repository";
-import { Op } from "sequelize";
+import { Sequelize } from "sequelize-typescript";
+import { UpdateItemQuantityDto } from "../items/dto";
 
 @Injectable()
 export class OrderDetailsService {
@@ -54,7 +55,7 @@ export class OrderDetailsService {
     async getOrderDetailsByOrder(orderId: string): Promise<OrderDetail[]> {
         return this.orderDetailsRepository.find({
             where: {
-                orderId,
+                orderId
             },
             include: [
                 {
@@ -62,9 +63,18 @@ export class OrderDetailsService {
                     as: 'item',
                     attributes: ['name', 'price', 'quantityInStock']
                 }
-            ],
-            raw: false,
-            nest: true
+            ]
+        });
+    }
+
+    async updateItemsQuantity(orderDetails: OrderDetail[]): Promise<void> {
+        const updatedItemsData = orderDetails.map(detail => ({
+            id: detail.itemId,
+            quantityInStock: Sequelize.literal(`quantityInStock - ${detail.quantityOrdered}`)
+        } as UpdateItemQuantityDto));
+
+        await this.itemsService.bulkCreateItems(updatedItemsData, {
+            updateOnDuplicate: ["quantityInStock"]
         });
     }
 
@@ -74,27 +84,10 @@ export class OrderDetailsService {
         const item = await this.itemsService.getItemById(body.itemId);
 
         if (body.quantityOrdered > item.quantityInStock) {
-            ErrorHelper.BadRequestException(ORDER_DETAIL.OVER_QUANTITY(item.name, item.quantityInStock));
+            ErrorHelper.BadRequestException(ORDER_DETAIL.OVER_QUANTITY);
         }
 
         return this.orderDetailsRepository.create(body);
-    }
-
-    async createManyOrderDetails(body: CreateManyDetailsDto): Promise<OrderDetail[]> {
-        await this.ordersService.getOrderById(body.orderId);
-
-        const items = body.orderedItems.map(async (orderedItem) => {
-            const item = await this.itemsService.getItemById(orderedItem.itemId);
-            if (orderedItem.quantityOrdered > item.quantityInStock) {
-                ErrorHelper.BadRequestException(ORDER_DETAIL.OVER_QUANTITY(item.name, item.quantityInStock));
-            }
-            return {
-                ...item,
-                orderId: body.orderId
-            }
-        });
-
-        return this.orderDetailsRepository.bulkCreate(items);
     }
 
     async updateOrderDetail(id: string, body: UpdateOrderDetailDto): Promise<OrderDetail[]> {
@@ -110,7 +103,7 @@ export class OrderDetailsService {
 
         const item = await this.itemsService.getItemById(orderDetail.itemId);
         if (body.quantityOrdered && body.quantityOrdered > item.quantityInStock) {
-            ErrorHelper.BadRequestException(ORDER_DETAIL.OVER_QUANTITY(item.name, item.quantityInStock));
+            ErrorHelper.BadRequestException(ORDER_DETAIL.OVER_QUANTITY);
         }
 
         return this.orderDetailsRepository.update(body, { where: { id } });
@@ -135,7 +128,7 @@ export class OrderDetailsService {
             },
             {
                 where: {
-                    id: { [Op.in]: ids }
+                    id: { ids }
                 }
             }
         );
