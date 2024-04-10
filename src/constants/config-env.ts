@@ -22,7 +22,6 @@ export const REFRESH_TOKEN_SECRET_KEY = process.env.REFRESH_TOKEN_SECRET_KEY || 
 export const SERVER_PORT: number = +process.env.SERVER_PORT || 3000;
 export const BASE_URL = process.env.BASE_URL || 'http://localhost:3000/';
 export const SECRET_KEY_SEND_GMAIL = process.env.SECRET_KEY_SEND_GMAIL || '57ec1978-ddad-48b6-8db7-88123a8da5c2';
-export const SECRET_KEY_SEND_SMS = process.env.SECRET_KEY_SEND_SMS || '';
 export const OTP_TIME_EXPIRE = +process.env.OTP_TIME_EXPIRE || 300;
 
 // AWS
@@ -49,11 +48,3 @@ export const PREFIX_KEY = process.env.PREFIX_KEY || '';
 export const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'example@adamosoft.com';
 export const ADMIN_PASSWORD_EMAIL = process.env.ADMIN_PASSWORD_EMAIL || 'abc+=123';
 export const ADMIN_EMAIL_NAME = process.env.ADMIN_EMAIL_NAME || 'abc+=123';
-
-// Send SMS
-export const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID || '';
-export const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN || '';
-export const TWILIO_PHONE_NUMBER = process.env.TWILIO_PHONE_NUMBER || '';
-
-export const VONAGE_API_SECRET = process.env.VONAGE_API_SECRET || '';
-export const VONAGE_API_KEY = process.env.VONAGE_API_KEY || '';

@@ -1,15 +1,15 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNumberString, IsString } from 'class-validator';
+import { IsEmail, IsString } from 'class-validator';
 
-export class SendUserOTPDto {
+export class SendOTPDto {
   @IsString()
-  @IsNumberString()
+  @IsEmail()
   @ApiProperty({
     type: String,
-    description: 'Your phone number',
-    example: '0123456789',
+    description: 'Your email',
+    example: 'youremail@email.com',
   })
-  phoneNumber: string;
+  email: string;
 
   @IsString()
   @ApiProperty({
@@ -20,7 +20,7 @@ export class SendUserOTPDto {
   hash: string;
 }
 
-export class VerifyUserOTPDto {
+export class VerifyOTPDto {
   @IsString()
   @ApiProperty({
     type: String,

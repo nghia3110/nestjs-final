@@ -10,12 +10,11 @@ import {
   OrdersModule,
   StoresModule,
   UploadsModule,
-  UsersModule,
+  UsersModule
 } from './modules';
 import { RanksModule } from './modules/ranks/ranks.module';
 import { IoRedisModule } from './utils';
 import { RedeemItemsModule } from './modules/redeem-items';
-import { SmsModule } from './modules/sms/sms.module';
 
 
 @Module({
@@ -31,8 +30,7 @@ import { SmsModule } from './modules/sms/sms.module';
     MethodDetailsModule,
     ItemsModule,
     RedeemItemsModule,
-    PostgresqlModule,
-    SmsModule
+    PostgresqlModule
   ],
   controllers: [AppController],
   providers: [],
