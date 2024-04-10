@@ -28,11 +28,7 @@ export interface ILoginResponse {
   token: IToken,
 }
 
-export interface IVerifyOTPResponse {
-  email?: string;
-  phoneNumber?: string;
-  isVerified: boolean;
-}
+export type TVerifyOTPRes = ILoginResponse | IMessageResponse;
 
 export interface IOrderAmount {
   totalAmount: number

@@ -39,6 +39,7 @@
     "@nestjs/sequelize": "^9.0.0",
     "@nestjs/swagger": "^6.2.1",
     "@types/express-handlebars": "^6.0.0",
+    "@vonage/server-sdk": "^3.14.0",
     "aws-sdk": "^2.1311.0",
     "bcrypt": "^5.0.1",
     "class-transformer": "0.4.0",
@@ -56,6 +57,7 @@
     "morgan": "^1.10.0",
     "multer": "^1.4.5-lts.1",
     "mysql2": "^3.0.1",
+    "nestjs-twilio": "^4.4.0",
     "nodemailer": "^6.8.0",
     "pg": "^8.8.0",
     "reflect-metadata": "^0.1.13",
@@ -63,6 +65,7 @@
     "rxjs": "^7.2.0",
     "sequelize": "^6.21.3",
     "sequelize-typescript": "^2.1.5",
+    "twilio": "^5.0.2",
     "uuid": "^9.0.0"
   },
   "devDependencies": {

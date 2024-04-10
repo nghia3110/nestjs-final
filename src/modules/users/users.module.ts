@@ -7,12 +7,14 @@ import { UsersRepository } from './users.repository';
 import { UsersService } from './users.service';
 import { RanksModule } from '../ranks/ranks.module';
 import { OrdersModule } from '../orders';
+import { SmsModule } from '../sms/sms.module';
 
 @Module({
   imports: [
     SequelizeModule.forFeature([User]),
     RanksModule,
-    forwardRef(() => OrdersModule)
+    forwardRef(() => OrdersModule),
+    SmsModule
   ],
   controllers: [UsersController],
   providers: [UsersService, UsersRepository],

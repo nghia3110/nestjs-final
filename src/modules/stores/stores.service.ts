@@ -33,7 +33,6 @@ import {
     IMessageResponse,
     IPaginationRes,
     IToken,
-    IVerifyOTPResponse
 } from "src/interfaces";
 import { TStore } from "src/types";
 import {
@@ -192,7 +191,7 @@ export class StoresService {
             ErrorHelper.BadRequestException(ORDER.ORDER_NOT_FOUND);
         }
 
-        if(order.status === EStatus.SUCCESS) {
+        if (order.status === EStatus.SUCCESS) {
             ErrorHelper.BadRequestException(ORDER.ORDER_ALREADY_SUCCESS);
         }
 
@@ -345,7 +344,7 @@ export class StoresService {
         };
     }
 
-    async verifyOTP(otp: string, hash: string): Promise<IVerifyOTPResponse> {
+    async verifyOTP(otp: string, hash: string): Promise<IMessageResponse> {
         const checkHashInfo = CommonHelper.checkHashData(hash);
         if (!checkHashInfo) {
             ErrorHelper.BadRequestException(APPLICATION.VERIFY_FAIL);
@@ -370,8 +369,7 @@ export class StoresService {
                 }
             });
         return {
-            email: hashInfo.email,
-            isVerified: true
-        }
+            message: APPLICATION.VERIFY_OTP_SUCCESS
+        };
     }
 }

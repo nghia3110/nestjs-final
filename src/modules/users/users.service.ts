@@ -1,5 +1,4 @@
 import { Inject, Injectable, forwardRef } from '@nestjs/common';
-import md5 from 'md5';
 import moment from 'moment';
 
 import {
@@ -8,37 +7,36 @@ import {
   APPLICATION,
   EPromotePoint,
   ERank,
-  HASH,
   OTP,
   OTP_TIME_EXPIRE,
   REFRESH_TOKEN_EXPIRE_TIME,
   REFRESH_TOKEN_SECRET_KEY,
-  SECRET_KEY_SEND_GMAIL,
   USER,
 } from 'src/constants';
+import { IHashAuthData, IHashResponse, IMessageResponse, IPaginationRes, IToken, IVerifyOTPData, TVerifyOTPRes } from 'src/interfaces';
 import {
   CommonHelper,
   EncryptHelper,
   ErrorHelper,
-  SendEmailHelper,
   TokenHelper,
 } from 'src/utils/helpers';
-import { IHashResponse, ILoginResponse, IMessageResponse, IPaginationRes, IToken } from 'src/interfaces';
 
-import { LoginDto } from './dto/login.dto';
-import { UsersRepository } from './users.repository';
-import { CreateUserDto, UpdateUserDto } from './dto';
-import { GetListDto, Order, Rank, User } from 'src/database';
 import { Op } from 'sequelize';
-import { RanksService } from '../ranks/ranks.service';
+import { GetListDto, Rank, User } from 'src/database';
 import { OrdersService } from '../orders/orders.service';
+import { RanksService } from '../ranks/ranks.service';
+import { CreateUserDto, LoginUserDto, UpdateUserDto } from './dto';
+import { UsersRepository } from './users.repository';
+import { SmsService } from '../sms/sms.service';
+
 @Injectable()
 export class UsersService {
   constructor(
     private readonly usersRepository: UsersRepository,
     private readonly ranksService: RanksService,
     @Inject(forwardRef(() => OrdersService))
-    private readonly ordersService: OrdersService
+    private readonly ordersService: OrdersService,
+    private readonly smsService: SmsService
   ) { }
 
   async getListUsers(paginateInfo: GetListDto): Promise<IPaginationRes<User>> {
@@ -165,12 +163,12 @@ export class UsersService {
     }, { where: { id: userId } });
   }
 
-  async login(body: LoginDto): Promise<ILoginResponse> {
-    const { password, email } = body;
+  async login(body: LoginUserDto): Promise<IHashResponse> {
+    const { password, phoneNumber } = body;
 
     const user = await this.usersRepository.findOne({
       where: {
-        email,
+        phoneNumber,
       },
     });
 
@@ -181,18 +179,50 @@ export class UsersService {
       password,
       user.password,
     );
-    if (!isValidPassword)
+    if (!isValidPassword) {
       ErrorHelper.BadRequestException(USER.INVALID_PASSWORD);
+    }
 
-    const token = this.generateToken(
-      {
-        id: user.id,
-        isAdmin: user.isAdmin
-      }
+    const hashData: IHashAuthData = {
+      id: user.id,
+      phoneNumber: user.phoneNumber,
+      isAdmin: user.isAdmin,
+      isLogin: true
+    }
+
+    const hashCode = CommonHelper.hashData(
+      JSON.stringify(hashData)
     );
-    delete user.password;
+
     return {
-      token
+      hash: hashCode
+    };
+  }
+
+  async register(body: CreateUserDto): Promise<IHashResponse> {
+    await this.checkConflictInfo(body.email, body.phoneNumber);
+
+    const hashPassword = await EncryptHelper.hash(body.password);
+
+    const newUser = await this.usersRepository.create(
+      {
+        ...body,
+        password: hashPassword
+      });
+
+    const hashData: IHashAuthData = {
+      id: newUser.id,
+      phoneNumber: newUser.phoneNumber,
+      isAdmin: newUser.isAdmin,
+      isLogin: false
+    };
+
+    const hashCode = CommonHelper.hashData(
+      JSON.stringify(hashData)
+    );
+
+    return {
+      hash: hashCode
     };
   }
 
@@ -215,42 +245,46 @@ export class UsersService {
     };
   }
 
-  async sendOTP(email: string, hash: string): Promise<IHashResponse> {
-    const checkHash = md5(
-      email + SECRET_KEY_SEND_GMAIL + moment().format('DD/MM/YYYY'),
-    );
+  async sendOTP(phoneNumber: string, hash: string): Promise<IHashResponse> {
+    const checkHashInfo = CommonHelper.checkHashData(hash);
+    if (!checkHashInfo) {
+      ErrorHelper.BadRequestException(APPLICATION.VERIFY_FAIL);
+    }
 
-    if (checkHash !== hash) {
+    const hashInfo = JSON.parse(checkHashInfo) as IHashAuthData;
+
+    if (hashInfo.phoneNumber !== phoneNumber) {
       ErrorHelper.InternalServerErrorException(APPLICATION.HASH_IS_NOT_CORRECT);
     }
 
     const OTP = CommonHelper.generateOTP();
-    SendEmailHelper.sendOTP({
-      to: email,
-      subject: 'Confirm OTP',
-      OTP,
+
+    await this.smsService.sendOtp({
+      to: '+84' + phoneNumber.slice(1),
+      otp: OTP
     });
 
+    const verifyOTPData: IVerifyOTPData = {
+      otp: OTP,
+      time: moment().add(OTP_TIME_EXPIRE, 'second').valueOf(),
+      data: hashInfo
+    }
+
     const hashCode = CommonHelper.hashData(
-      JSON.stringify({
-        otp: OTP,
-        time: moment().add(OTP_TIME_EXPIRE, 'second').valueOf(),
-        email,
-        isVerified: false,
-      }),
+      JSON.stringify(verifyOTPData),
     );
     return {
       hash: hashCode
     };
   }
 
-  async verifyOTP(otp: string, hash: string): Promise<IHashResponse> {
+  async verifyOTP(otp: string, hash: string): Promise<TVerifyOTPRes> {
     const checkHashInfo = CommonHelper.checkHashData(hash);
     if (!checkHashInfo) {
       ErrorHelper.BadRequestException(APPLICATION.VERIFY_FAIL);
     }
 
-    const hashInfo = JSON.parse(checkHashInfo);
+    const hashInfo = JSON.parse(checkHashInfo) as IVerifyOTPData;
     if (hashInfo.time < new Date().getTime()) {
       ErrorHelper.InternalServerErrorException(OTP.OTP_TIMEOUT);
     }
@@ -259,53 +293,34 @@ export class UsersService {
       ErrorHelper.InternalServerErrorException(OTP.OTP_INVALID);
     }
 
-    const hashCode = CommonHelper.hashData(
-      JSON.stringify({
-        time: moment().add(OTP_TIME_EXPIRE, 'second').valueOf(),
-        email: hashInfo.email,
-        isVerified: true,
-      }),
-    );
+    if (hashInfo.data.isLogin) {
+      const token = this.generateToken({
+        id: hashInfo.data.id,
+        isAdmin: hashInfo.data.isAdmin
+      });
+
+      return {
+        token
+      }
+    } else {
+      const user = await this.usersRepository.findOne({
+        where: {
+          phoneNumber: hashInfo.data.phoneNumber
+        }
+      });
+
+      if (!user) {
+        ErrorHelper.BadRequestException(USER.USER_NOT_FOUND);
+      }
+
+      await this.usersRepository.update({
+        isVerified: true
+      }, { where: { id: user.id } })
+    }
+
 
     return {
-      hash: hashCode
+      message: APPLICATION.VERIFY_OTP_SUCCESS
     };
-  }
-
-  async forgetPassword(newPassword: string, hash: string): Promise<boolean> {
-    const checkHashInfo = CommonHelper.checkHashData(hash);
-    if (!checkHashInfo) {
-      ErrorHelper.BadRequestException(APPLICATION.VERIFY_FAIL);
-    }
-    const hashInfo = JSON.parse(checkHashInfo);
-    if (hashInfo.time < new Date().getTime()) {
-      ErrorHelper.InternalServerErrorException(
-        USER.EXPIRE_TIME_CHANGE_PASSWORD,
-      );
-    }
-    if (!hashInfo.isVerified) {
-      ErrorHelper.InternalServerErrorException(HASH.UNVERIFIED_HASH);
-    }
-    const userInfo = await this.usersRepository.findOne({
-      where: {
-        email: hashInfo.email,
-      },
-    });
-    if (!userInfo)
-      throw ErrorHelper.InternalServerErrorException(USER.USER_NOT_FOUND);
-
-    const hashPassword = await EncryptHelper.hash(newPassword);
-    await this.usersRepository.update(
-      {
-        password: hashPassword,
-      },
-      {
-        where: {
-          email: hashInfo.email,
-        },
-      },
-    );
-
-    return true;
   }
 }
