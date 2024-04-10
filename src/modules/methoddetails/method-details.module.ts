@@ -4,17 +4,10 @@ import { MethodDetail } from 'src/database';
 
 import { MethodDetailsRepository } from './method-details.repository';
 import { MethodDetailsService } from './method-details.service';
-import { MethodsModule } from '../methods';
-import { RanksModule } from '../ranks/ranks.module';
-import { MethodDetailsController } from './method-details.controller';
 
 @Module({
-    imports: [
-        SequelizeModule.forFeature([MethodDetail]),
-        MethodsModule,
-        RanksModule
-    ],
-    controllers: [MethodDetailsController],
+    imports: [SequelizeModule.forFeature([MethodDetail])],
+    controllers: [],
     providers: [MethodDetailsService, MethodDetailsRepository],
     exports: [MethodDetailsService],
 })

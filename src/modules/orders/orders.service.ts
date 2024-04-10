@@ -1,14 +1,13 @@
 import { Inject, Injectable, forwardRef } from "@nestjs/common";
-import { ORDER } from "src/constants";
+import { EStatus, ORDER } from "src/constants";
 import { GetListDto, Order, Store, User } from "src/database";
 import { IMessageResponse, IOrderAmount, IPaginationRes } from "src/interfaces";
 import { TStore } from "src/types";
 import { ErrorHelper } from "src/utils";
-import { OrderDetailsService } from "../order-details/order-details.service";
 import { UsersService } from "../users/users.service";
 import { CreateOrderDto, UpdateOrderDto } from "./dto";
 import { OrdersRepository } from "./orders.repository";
-import { ItemsService } from "../items/items.service";
+import { OrderDetailsService } from "../orderdetails/order-details.service";
 
 @Injectable()
 export class OrdersService {
@@ -17,8 +16,7 @@ export class OrdersService {
         @Inject(forwardRef(() => UsersService))
         private readonly usersService: UsersService,
         @Inject(forwardRef(() => OrderDetailsService))
-        private readonly orderDetailsService: OrderDetailsService,
-        private readonly itemsService: ItemsService
+        private readonly orderDetailsService: OrderDetailsService
     ) { }
 
     async getListOrders(paginateInfo: GetListDto): Promise<IPaginationRes<Order>> {
@@ -73,25 +71,6 @@ export class OrdersService {
         })
     }
 
-    async paginateOrdersInStore(storeId: string, paginateInfo: GetListDto): Promise<IPaginationRes<Order>> {
-        const { page, limit } = paginateInfo;
-        return this.ordersRepository.paginate(parseInt(page), parseInt(limit), {
-            where: {
-                storeId
-            },
-            include: [
-                {
-                    model: User,
-                    as: 'user',
-                    attributes: ['firstName', 'lastName']
-                }
-            ],
-            attributes: { exclude: ['storeId'] },
-            raw: false,
-            nest: true
-        });
-    }
-
     async calcOrderAmount(orderId: string): Promise<IOrderAmount> {
         const orderDetails = await this.orderDetailsService.getOrderDetailsByOrder(orderId);
 
@@ -99,12 +78,12 @@ export class OrdersService {
             return total + (currentDetail.quantityOrdered * currentDetail.item.price);
         }, 0);
 
-        await this.itemsService.updateItemsQuantity(orderDetails);
+        await this.orderDetailsService.updateItemsQuantity(orderDetails);
 
         const orderDetailsIds = orderDetails.map(detail => detail.id);
 
         await this.orderDetailsService.updateStatusOrderDetails(orderDetailsIds);
-
+        
         return {
             totalAmount
         }

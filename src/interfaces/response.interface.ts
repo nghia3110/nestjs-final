@@ -24,8 +24,9 @@ export interface IHashResponse {
   hash: string;
 }
 
-export interface ILoginResponse {
+export interface ILoginResponse<T> {
   token: IToken,
+  item: T
 }
 
 export interface IVerifyOTPResponse {

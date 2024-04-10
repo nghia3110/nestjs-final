@@ -6,7 +6,7 @@ module.exports = {
     await queryInterface.addConstraint('redeem', {
       fields: ['user_id'],
       type: 'foreign key',
-      name: 'redeem_user_fk',
+      name: 'orders_redeem_fk',
       references: {
         table: 'users',
         field: 'id',

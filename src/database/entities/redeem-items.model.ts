@@ -3,26 +3,16 @@ import { Item } from "./items.model";
 import { RedeemDetail } from "./redeem-details.model";
 import { Redeem } from "./redeem.model";
 import { BaseModel } from "../base.model";
-import { Store } from "./stores.model";
 
 @Table({
     tableName: 'redeem_items',
     underscored: true
 })
 export class RedeemItem extends BaseModel {
-    @Column
-    name: string;
-
-    @Column
-    photo: string;
-
-    @Column
-    description: string;
-
     @Column({
         type: DataType.DOUBLE
     })
-    exchangePoint: number;
+    exchange_point: number;
 
     @Column
     expiredTime: Date
@@ -32,14 +22,14 @@ export class RedeemItem extends BaseModel {
     })
     quantity: number;
 
-    @ForeignKey(() => Store)
+    @ForeignKey(() => Item)
     @Column({
         type: DataType.UUID
     })
-    storeId: string;
+    itemId: string;
 
-    @BelongsTo(() => Store)
-    store: Store;
+    @BelongsTo(() => Item)
+    item: Item;
 
     @BelongsToMany(() => Redeem, () => RedeemDetail)
     redeems: Redeem[];
