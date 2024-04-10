@@ -61,9 +61,10 @@ export class UsersService {
       },
       include: [{
         model: Rank,
-        as: 'rank'
+        as: 'rank',
+        attributes: ['name']
       }],
-      attributes: { exclude: ['password', 'rankId'] },
+      attributes: { exclude: ['password'] },
       raw: false,
       nest: true
     });
@@ -135,11 +136,12 @@ export class UsersService {
     const { page, limit } = paginateInfo;
     return this.usersRepository.paginate(parseInt(page), parseInt(limit), {
       where: {
-        id: { userIds }
+        id: { [Op.in]: userIds }
       },
       include: [{
         model: Rank,
-        as: 'rank'
+        as: 'rank',
+        attributes: ['name']
       }],
       attributes: { exclude: ['password', 'rankId'] },
       raw: false,
@@ -163,7 +165,7 @@ export class UsersService {
     }, { where: { id: userId } });
   }
 
-  async login(body: LoginDto): Promise<ILoginResponse<User>> {
+  async login(body: LoginDto): Promise<ILoginResponse> {
     const { password, email } = body;
 
     const user = await this.usersRepository.findOne({
@@ -190,8 +192,7 @@ export class UsersService {
     );
     delete user.password;
     return {
-      token,
-      item: user,
+      token
     };
   }
 

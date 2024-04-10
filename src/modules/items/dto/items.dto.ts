@@ -1,19 +1,18 @@
 import { ApiProperty, PartialType } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
+  IsArray,
   IsNotEmpty,
   IsNumber,
-  IsNumberString,
-  IsOptional,
   IsPositive,
   IsString,
-  IsUUID,
+  ValidateNested,
 } from 'class-validator';
-import { Literal } from 'sequelize/types/utils';
 import { POSITIVE_VALIDATE, REQUIRED_VALIDATE } from 'src/constants';
 
 export class CreateItemDto {
   @IsString()
-  @IsNotEmpty({ message: REQUIRED_VALIDATE('item name')})
+  @IsNotEmpty({ message: REQUIRED_VALIDATE('item name') })
   @ApiProperty({
     type: String,
     description: 'Item name',
@@ -22,8 +21,8 @@ export class CreateItemDto {
   name: string;
 
   @IsNumber()
-  @IsPositive({message: POSITIVE_VALIDATE('price')})
-  @IsNotEmpty({message: REQUIRED_VALIDATE('price')})
+  @IsPositive({ message: POSITIVE_VALIDATE('price') })
+  @IsNotEmpty({ message: REQUIRED_VALIDATE('price') })
   @ApiProperty({
     type: Number,
     description: 'Price',
@@ -32,7 +31,7 @@ export class CreateItemDto {
   price: number;
 
   @IsNumber()
-  @IsPositive({message: POSITIVE_VALIDATE('quantity')})
+  @IsPositive({ message: POSITIVE_VALIDATE('quantity') })
   @IsNotEmpty({ message: REQUIRED_VALIDATE('quantity') })
   @ApiProperty({
     type: Number,
@@ -52,22 +51,16 @@ export class CreateItemDto {
     description: 'Description',
   })
   description: string;
-
-  @IsUUID()
-  @IsString()
-  @IsNotEmpty({ message: REQUIRED_VALIDATE('store') })
-  @ApiProperty({
-    type: String,
-  })
-  storeId: string;
 }
 
-export class UpdateItemDto extends PartialType(CreateItemDto) {}
+export class UpdateItemDto extends PartialType(CreateItemDto) { }
 
-export class UpdateItemQuantityDto {
-  @IsUUID()
-  @IsString()
-  id: string;
-
-  quantityInStock: Literal;
+export class CreateArrayItemDto {
+  @IsArray()
+  @Type(() => CreateItemDto) 
+  @ValidateNested({ each: true })
+  @ApiProperty({
+    type: [CreateItemDto]
+  })
+  items: CreateItemDto[];
 }

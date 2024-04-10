@@ -8,7 +8,9 @@ import { MethodsModule } from '../methods/methods.module';
 import { StoresController } from './stores.controller';
 import { OrdersModule } from '../orders';
 import { UsersModule } from '../users';
-import { MethodDetailsModule } from '../methoddetails';
+import { MethodDetailsModule } from '../method-details';
+import { RedeemItemsModule } from '../redeem-items';
+import { ItemsModule } from '../items';
 
 @Module({
     imports: [
@@ -16,7 +18,9 @@ import { MethodDetailsModule } from '../methoddetails';
         MethodsModule,
         OrdersModule,
         UsersModule, 
-        MethodDetailsModule
+        MethodDetailsModule,
+        ItemsModule,
+        RedeemItemsModule
     ],
     controllers: [StoresController],
     providers: [StoresService, StoresRepository],

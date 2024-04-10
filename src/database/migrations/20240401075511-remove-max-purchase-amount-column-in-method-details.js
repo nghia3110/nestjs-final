@@ -8,7 +8,6 @@ module.exports = {
 
   async down(queryInterface, Sequelize) {
     await queryInterface.addColumn('method_details', 'max_purchase_amount', {
-      allowNull: false,
       type: Sequelize.DOUBLE
     })
   }
