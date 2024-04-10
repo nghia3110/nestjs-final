@@ -5,7 +5,7 @@ module.exports = {
   async up (queryInterface, Sequelize) {
     await queryInterface.addColumn('order_details', 'status', {
       allowNull: false,
-      type: Sequelize.BOOLEAN,
+      type: Sequelize.STRING,
       defaultValue: 'pending'
     })
   },

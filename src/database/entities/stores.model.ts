@@ -3,6 +3,7 @@ import { AccumulateMethod } from "./accumulate-methods.model";
 import { Item } from "./items.model";
 import { BaseModel } from "../base.model";
 import { Order } from "./orders.model";
+import { RedeemItem } from "./redeem-items.model";
 
 @Table({
     tableName: 'stores',
@@ -45,6 +46,9 @@ export class Store extends BaseModel {
 
     @HasMany(() => Item)
     items: Item[];
+
+    @HasMany(() => RedeemItem)
+    redeemItems: RedeemItem[];
 
     @HasMany(() => Order)
     orders: Order[];

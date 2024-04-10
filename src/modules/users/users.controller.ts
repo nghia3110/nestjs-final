@@ -9,7 +9,7 @@ import {
   Query,
   UseGuards
 } from '@nestjs/common';
-import { ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { AdminGuard, UuidParam } from 'src/utils';
 import {
@@ -29,17 +29,17 @@ export class UsersController {
   constructor(private usersService: UsersService) { }
 
   @ApiOperation({ summary: 'API get list users' })
+  @ApiBearerAuth()
   @UseGuards(AdminGuard)
   @Get()
   @HttpCode(200)
   async getListUsers(
-    @Query('page') page?: string,
-    @Query('limit') limit?: string) {
-    const paginateInfo = { page, limit } as GetListDto;
-    return await this.usersService.getListUsers(paginateInfo);
+    @Query() query: GetListDto) {
+    return await this.usersService.getListUsers(query);
   }
 
   @ApiOperation({ summary: 'API get user by Id' })
+  @ApiBearerAuth()
   @UseGuards(AdminGuard)
   @Get('/:id')
   @HttpCode(200)
@@ -53,6 +53,7 @@ export class UsersController {
     required: true,
     description: 'Admin create user'
   })
+  @ApiBearerAuth()
   @UseGuards(AdminGuard)
   @Post()
   @HttpCode(201)
@@ -66,6 +67,7 @@ export class UsersController {
     required: true,
     description: 'Admin update user'
   })
+  @ApiBearerAuth()
   @UseGuards(AdminGuard)
   @Put('/:id')
   @HttpCode(201)
@@ -74,6 +76,7 @@ export class UsersController {
   }
 
   @ApiOperation({ summary: 'API delete user' })
+  @ApiBearerAuth()
   @UseGuards(AdminGuard)
   @Delete('/:id')
   @HttpCode(200)

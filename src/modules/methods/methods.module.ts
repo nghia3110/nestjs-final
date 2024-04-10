@@ -4,10 +4,11 @@ import { AccumulateMethod } from 'src/database';
 
 import { MethodsRepository } from './methods.repository';
 import { MethodsService } from './methods.service';
+import { MethodsController } from './methods.controller';
 
 @Module({
     imports: [SequelizeModule.forFeature([AccumulateMethod])],
-    controllers: [],
+    controllers: [MethodsController],
     providers: [MethodsService, MethodsRepository],
     exports: [MethodsService],
 })

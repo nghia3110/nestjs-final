@@ -14,9 +14,19 @@ import {
     REFRESH_TOKEN_EXPIRE_TIME,
     REFRESH_TOKEN_SECRET_KEY,
     SECRET_KEY_SEND_GMAIL,
-    STORE
+    STORE,
+    STORE_ACCESS_TOKEN_SECRET_KEY
 } from "src/constants";
-import { AccumulateMethod, GetListDto, MethodDetail, Store, User } from "src/database";
+import {
+    AccumulateMethod,
+    GetListDto,
+    Item,
+    MethodDetail,
+    Order,
+    RedeemItem,
+    Store,
+    User
+} from "src/database";
 import {
     IHashResponse,
     ILoginResponse,
@@ -25,6 +35,7 @@ import {
     IToken,
     IVerifyOTPResponse
 } from "src/interfaces";
+import { TStore } from "src/types";
 import {
     CommonHelper,
     EncryptHelper,
@@ -32,14 +43,15 @@ import {
     SendEmailHelper,
     TokenHelper
 } from "src/utils";
+import { ItemsService } from "../items/items.service";
+import { MethodDetailsService } from "../method-details/method-details.service";
 import { MethodsService } from "../methods/methods.service";
+import { OrdersService } from "../orders/orders.service";
+import { RedeemItemsService } from "../redeem-items/redeem-items.service";
+import { UsersService } from "../users/users.service";
 import { CreateStoreDto, UpdateStoreDto } from "./dto";
 import { LoginDto } from "./dto/login.dto";
 import { StoresRepository } from "./stores.repository";
-import { TStore } from "src/types";
-import { UsersService } from "../users/users.service";
-import { OrdersService } from "../orders/orders.service";
-import { MethodDetailsService } from "../methoddetails/method-details.service";
 
 @Injectable()
 export class StoresService {
@@ -48,7 +60,9 @@ export class StoresService {
         private readonly methodsService: MethodsService,
         private readonly usersService: UsersService,
         private readonly ordersService: OrdersService,
-        private readonly methodDetailsService: MethodDetailsService
+        private readonly methodDetailsService: MethodDetailsService,
+        private readonly itemsService: ItemsService,
+        private readonly redeemItemsService: RedeemItemsService
     ) { }
 
     async getListStores(paginateInfo: GetListDto): Promise<IPaginationRes<Store>> {
@@ -56,7 +70,8 @@ export class StoresService {
         return this.storesRepository.paginate(parseInt(page), parseInt(limit), {
             include: [{
                 model: AccumulateMethod,
-                as: 'method'
+                as: 'method',
+                attributes: ['name']
             }],
             attributes: { exclude: ['password', 'methodId'] },
             raw: false,
@@ -71,7 +86,8 @@ export class StoresService {
             },
             include: [{
                 model: AccumulateMethod,
-                as: 'method'
+                as: 'method',
+                attributes: ['name']
             }],
             attributes: { exclude: ['password'] },
             raw: false,
@@ -157,11 +173,27 @@ export class StoresService {
         return this.usersService.getUsersByStore(store.id, paginateInfo);
     }
 
+    async getAllOrdersInStore(paginateInfo: GetListDto, store: TStore): Promise<IPaginationRes<Order>> {
+        return this.ordersService.paginateOrdersInStore(store.id, paginateInfo);
+    }
+
+    async getAllItemsInStore(paginateInfo: GetListDto, store: TStore): Promise<IPaginationRes<Item>> {
+        return this.itemsService.getItemsByStore(store.id, paginateInfo);
+    }
+
+    async getAllRedeemItemsInStore(paginateInfo: GetListDto, store: TStore): Promise<IPaginationRes<RedeemItem>> {
+        return this.redeemItemsService.getRedeemItemsByStore(store.id, paginateInfo);
+    }
+
     async completeOrder(orderId: string, storePayload: TStore): Promise<IMessageResponse> {
         const order = await this.ordersService.getOrderById(orderId);
 
         if (order.storeId !== storePayload.id) {
             ErrorHelper.BadRequestException(ORDER.ORDER_NOT_FOUND);
+        }
+
+        if(order.status === EStatus.SUCCESS) {
+            ErrorHelper.BadRequestException(ORDER.ORDER_ALREADY_SUCCESS);
         }
 
         const [user, store] = await Promise.all([
@@ -233,7 +265,7 @@ export class StoresService {
         };
     }
 
-    async login(body: LoginDto): Promise<ILoginResponse<Store>> {
+    async login(body: LoginDto): Promise<ILoginResponse> {
         const { password, email } = body;
 
         const store = await this.getStoreByEmail(email);
@@ -261,15 +293,14 @@ export class StoresService {
         );
         delete store.password;
         return {
-            token,
-            item: store,
+            token
         };
     }
 
     private generateToken(payload: object): IToken {
         const { token: accessToken, expires } = TokenHelper.generate(
             payload,
-            ACCESS_TOKEN_SECRET_KEY,
+            STORE_ACCESS_TOKEN_SECRET_KEY,
             ACCESS_TOKEN_EXPIRE_TIME,
         );
         const { token: refreshToken } = TokenHelper.generate(

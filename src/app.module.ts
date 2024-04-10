@@ -14,6 +14,7 @@ import {
 } from './modules';
 import { RanksModule } from './modules/ranks/ranks.module';
 import { IoRedisModule } from './utils';
+import { RedeemItemsModule } from './modules/redeem-items';
 
 
 @Module({
@@ -28,6 +29,7 @@ import { IoRedisModule } from './utils';
     OrderDetailsModule,
     MethodDetailsModule,
     ItemsModule,
+    RedeemItemsModule,
     PostgresqlModule
   ],
   controllers: [AppController],
