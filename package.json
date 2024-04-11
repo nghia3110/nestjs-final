@@ -49,6 +49,7 @@
     "crypto-js": "^4.1.1",
     "dotenv": "^14.2.0",
     "express-handlebars": "^6.0.7",
+    "imagekit": "^5.0.1",
     "ioredis": "^5.2.4",
     "jsonwebtoken": "^8.5.1",
     "lodash": "^4.17.21",

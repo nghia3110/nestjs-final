@@ -61,10 +61,10 @@ class RedeemItemDetail {
     quantityRedeem: number;
 }
 
-export class CreateManyDetailsDto {
+export class CreateManyRedeemDetailsDto {
     @IsUUID()
     @IsString()
-    @IsNotEmpty({ message: REQUIRED_VALIDATE('orderId') })
+    @IsNotEmpty({ message: REQUIRED_VALIDATE('redeemId') })
     @ApiProperty({
         type: String,
     })

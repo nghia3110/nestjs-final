@@ -3,7 +3,7 @@ import { EStatus, REDEEM_DETAIL } from "src/constants";
 import { GetListDto, RedeemDetail, RedeemItem } from "src/database";
 import { IMessageResponse, IPaginationRes } from "src/interfaces";
 import { ErrorHelper } from "src/utils";
-import { CreateManyDetailsDto, CreateRedeemDetailDto, UpdateRedeemDetailDto } from "./dto";
+import { CreateManyRedeemDetailsDto, CreateRedeemDetailDto, UpdateRedeemDetailDto } from "./dto";
 import { RedeemDetailsRepository } from "./redeem-details.repository";
 import { Op } from "sequelize";
 import { RedeemItemsService } from "../redeem-items";
@@ -80,7 +80,7 @@ export class RedeemDetailsService {
         return this.redeemDetailsRepository.create(body);
     }
 
-    async createManyRedeemDetails(body: CreateManyDetailsDto): Promise<RedeemDetail[]> {
+    async createManyRedeemDetails(body: CreateManyRedeemDetailsDto): Promise<RedeemDetail[]> {
         const errors: string[] = [];
         const itemsPromise = body.redeemItems.map(async (redeemItem) => {
             const item = await this.redeemItemsService.getRedeemItemById(redeemItem.itemId);
@@ -96,7 +96,7 @@ export class RedeemDetailsService {
         const items = await Promise.all(itemsPromise);
         
         if(errors.length > 0) {
-            ErrorHelper.BadRequestException(errors.join('\n'));
+            ErrorHelper.BadRequestException(errors.join(' '));
         }
         
         return this.redeemDetailsRepository.bulkCreate(items);

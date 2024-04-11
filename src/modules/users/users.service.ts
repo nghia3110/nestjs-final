@@ -33,10 +33,9 @@ import {
 
 import { Op } from 'sequelize';
 import { Sequelize } from 'sequelize-typescript';
-import { GetListDto, Rank, Redeem, User } from 'src/database';
+import { GetListDto, Rank, User } from 'src/database';
 import { RanksService } from '../ranks/ranks.service';
 import {
-  CreateRedeemDto,
   RedeemsService
 } from '../redeems';
 import { SmsService } from '../sms/sms.service';
@@ -49,7 +48,6 @@ export class UsersService {
   constructor(
     private readonly usersRepository: UsersRepository,
     private readonly ranksService: RanksService,
-    private readonly storesService: StoresService,
     private readonly redeemsService: RedeemsService,
     private readonly smsService: SmsService,
     private sequelize: Sequelize,
@@ -157,12 +155,6 @@ export class UsersService {
     return {
       message: USER.DELETE_SUCCESS
     }
-  }
-
-  async createRedeem(body: CreateRedeemDto, userId: string): Promise<Redeem> {
-    await this.storesService.getStoreById(body.storeId);
-
-    return this.redeemsService.createRedeem(body, userId);
   }
 
   async completeRedeem(redeemId: string, userId: string): Promise<IMessageResponse> {

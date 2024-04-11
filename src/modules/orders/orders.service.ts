@@ -1,4 +1,4 @@
-import { Inject, Injectable, forwardRef } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { AMOUNT_INCREASE_POINT, ORDER } from "src/constants";
 import { GetListDto, MethodDetail, Order, OrderDetail, Store, User } from "src/database";
 import { IMessageResponse, IPaginationRes } from "src/interfaces";
@@ -10,7 +10,6 @@ import {
     OrderDetailsService,
     UpdateOrderDetailDto
 } from "../order-details";
-import { UsersService } from "../users";
 import { CreateOrderDto, UpdateOrderDto } from "./dto";
 import { OrdersRepository } from "./orders.repository";
 
@@ -18,8 +17,6 @@ import { OrdersRepository } from "./orders.repository";
 export class OrdersService {
     constructor(
         private readonly ordersRepository: OrdersRepository,
-        private readonly usersService: UsersService,
-        @Inject(forwardRef(() => OrderDetailsService))
         private readonly orderDetailsService: OrderDetailsService,
         private readonly itemsService: ItemsService,
     ) { }
@@ -130,7 +127,6 @@ export class OrdersService {
     }
 
     async createOrder(body: CreateOrderDto, storeId: string): Promise<Order> {
-        await this.usersService.getUserById(body.userId);
         return this.ordersRepository.create(
             {
                 ...body,

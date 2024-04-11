@@ -15,7 +15,7 @@ import { GetListDto } from 'src/database';
 import { TUser } from 'src/types';
 import { AdminGuard, User, UserGuard, UuidParam } from 'src/utils';
 import {
-    CreateManyDetailsDto,
+    CreateManyRedeemDetailsDto,
     CreateRedeemDetailDto,
     RedeemDetailsService,
     UpdateRedeemDetailDto
@@ -53,20 +53,6 @@ export class RedeemsController {
         return await this.redeemsService.getRedeemById(id);
     }
 
-    @ApiOperation({ summary: 'API create redeem' })
-    @ApiBearerAuth()
-    @ApiBody({
-        type: CreateRedeemDto,
-        required: true,
-        description: 'User create redeem'
-    })
-    @UseGuards(UserGuard)
-    @Post()
-    @HttpCode(201)
-    async createRedeem(@Body() payload: CreateRedeemDto, @User() user: TUser) {
-        return await this.redeemsService.createRedeem(payload, user.id);
-    }
-
     @ApiOperation({ summary: 'API update redeem' })
     @ApiBody({
         type: UpdateRedeemDto,
@@ -98,7 +84,7 @@ export class RedeemsController {
     })
     @ApiBearerAuth()
     @UseGuards(UserGuard)
-    @Post()
+    @Post('/redeem-detail/create')
     @HttpCode(201)
     async createRedeemDetail(@Body() payload: CreateRedeemDetailDto) {
         return await this.redeemDetailsService.createRedeemDetail(payload);
@@ -106,15 +92,15 @@ export class RedeemsController {
 
     @ApiOperation({ summary: 'API create redeem details' })
     @ApiBody({
-        type: CreateManyDetailsDto,
+        type: CreateManyRedeemDetailsDto,
         required: true,
         description: 'Create redeem details'
     })
     @ApiBearerAuth()
     @UseGuards(UserGuard)
-    @Post('/create-many')
+    @Post('/redeem-detail/create-many')
     @HttpCode(201)
-    async createManyRedeemDetails(@Body() payload: CreateManyDetailsDto) {
+    async createManyRedeemDetails(@Body() payload: CreateManyRedeemDetailsDto) {
         return await this.redeemDetailsService.createManyRedeemDetails(payload);
     }
 
@@ -126,7 +112,7 @@ export class RedeemsController {
     })
     @ApiBearerAuth()
     @UseGuards(UserGuard)
-    @Put('/:id')
+    @Put('/redeem-detail/:id')
     @HttpCode(201)
     async updateRedeemDetail(@UuidParam('id') id: string, @Body() payload: UpdateRedeemDetailDto) {
         return await this.redeemDetailsService.updateRedeemDetail(id, payload);

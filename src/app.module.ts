@@ -18,12 +18,15 @@ import { RedeemItemsModule } from './modules/redeem-items';
 import { SmsModule } from './modules/sms/sms.module';
 import { RedeemsModule } from './modules/redeems';
 import { RedeemDetailsModule } from './modules/redeem-details';
+import { OrderRedeemModule } from './modules/order-redeem';
+import { AdminModule } from './modules/admin';
 
 
 @Module({
   imports: [
     IoRedisModule,
     UploadsModule,
+    AdminModule,
     UsersModule,
     StoresModule,
     MethodsModule,
@@ -35,6 +38,7 @@ import { RedeemDetailsModule } from './modules/redeem-details';
     RedeemItemsModule,
     RedeemsModule,
     RedeemDetailsModule,
+    OrderRedeemModule,
     PostgresqlModule,
     SmsModule
   ],

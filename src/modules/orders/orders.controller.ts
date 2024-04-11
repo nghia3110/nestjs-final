@@ -53,20 +53,6 @@ export class OrdersController {
         return await this.ordersService.getOrderById(id);
     }
 
-    @ApiOperation({ summary: 'API create order' })
-    @ApiBearerAuth()
-    @ApiBody({
-        type: CreateOrderDto,
-        required: true,
-        description: 'Store create order'
-    })
-    @UseGuards(StoreGuard)
-    @Post()
-    @HttpCode(201)
-    async createOrder(@Body() payload: CreateOrderDto, @Store() store: TStore) {
-        return await this.ordersService.createOrder(payload, store.id);
-    }
-
     @ApiOperation({ summary: 'API update order detail' })
     @ApiBody({
         type: UpdateOrderDetailDto,

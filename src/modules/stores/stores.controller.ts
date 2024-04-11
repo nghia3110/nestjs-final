@@ -1,7 +1,6 @@
 import {
     Body,
     Controller,
-    Delete,
     Get,
     HttpCode,
     Post,
@@ -13,14 +12,12 @@ import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { GetListDto } from 'src/database';
 import { TStore } from 'src/types';
-import { AdminGuard, Store, StoreGuard, UserGuard, UuidParam } from 'src/utils';
+import { Store, StoreGuard, UuidParam } from 'src/utils';
 import { ItemsService } from '../items';
 import { OrdersService } from '../orders';
 import { RedeemItemsService } from '../redeem-items';
-import { UserOrderService } from '../user-order';
 import {
     CreateStoreDto,
-    UpdateStoreDto,
 } from './dto';
 import { LoginDto } from './dto/login.dto';
 import { SendOTPDto, VerifyOTPDto } from './dto/otp.dto';
@@ -31,21 +28,10 @@ import { StoresService } from './stores.service';
 export class StoresController {
     constructor(
         private storesService: StoresService,
-        private userOrderService: UserOrderService,
         private ordersService: OrdersService,
         private itemsService: ItemsService,
         private redeemItemsService: RedeemItemsService
         ) { }
-
-    @ApiOperation({ summary: 'API get list stores' })
-    @ApiBearerAuth()
-    @UseGuards(AdminGuard)
-    @Get()
-    @HttpCode(200)
-    async getListStores(
-        @Query() query: GetListDto) {
-        return await this.storesService.getListStores(query);
-    }
 
     @ApiOperation({ summary: 'API get users in store' })
     @ApiBearerAuth()
@@ -56,7 +42,7 @@ export class StoresController {
         @Store() store: TStore,
         @Query() query: GetListDto,
     ) {
-        return await this.userOrderService.getUsersInStore(store.id, query);
+        return await this.storesService.getUsersInStore(store.id, query);
     }
 
     @ApiOperation({ summary: 'API get orders in store' })
@@ -72,82 +58,27 @@ export class StoresController {
     }
 
     @ApiOperation({ summary: 'API get items in store' })
-    @UseGuards(UserGuard, StoreGuard)
+    @UseGuards(StoreGuard)
     @ApiBearerAuth()
-    @Get('/:storeId/items')
+    @Get('/items')
     @HttpCode(200)
     async getItemsInStore(
-        @UuidParam('storeId') storeId: string,
         @Query() query: GetListDto,
+        @Store() store: TStore
     ) {
-        return await this.itemsService.getItemsByStore(storeId, query);
+        return await this.itemsService.getItemsByStore(store.id, query);
     }
 
     @ApiOperation({ summary: 'API get redeem items in store' })
-    @UseGuards(UserGuard, StoreGuard)
+    @UseGuards(StoreGuard)
     @ApiBearerAuth()
-    @Get('/:storeId/redeem-items')
+    @Get('/redeem-items')
     @HttpCode(200)
     async getRedeemItemsInStore(
-        @UuidParam('storeId') storeId: string,
         @Query() query: GetListDto,
+        @Store() store: TStore
     ) {
-        return await this.redeemItemsService.getRedeemItemsByStore(storeId, query);
-    }
-
-    @ApiOperation({ summary: 'API get store by Id' })
-    @ApiBearerAuth()
-    @UseGuards(AdminGuard)
-    @Get('/:id')
-    @HttpCode(200)
-    async getStoreById(@UuidParam('id') id: string) {
-        return await this.storesService.getStoreById(id);
-    }
-
-    @ApiOperation({ summary: 'API create store' })
-    @ApiBody({
-        type: CreateStoreDto,
-        required: true,
-        description: 'Admin create store'
-    })
-    @ApiBearerAuth()
-    @UseGuards(AdminGuard)
-    @Post()
-    @HttpCode(201)
-    async createStore(@Body() payload: CreateStoreDto) {
-        return await this.storesService.createStore(payload);
-    }
-
-    @ApiOperation({ summary: 'API approve store' })
-    @ApiBearerAuth()
-    @UseGuards(AdminGuard)
-    @Put('/approve/:id')
-    @HttpCode(201)
-    async approveStore(@UuidParam('id') id: string) {
-        return await this.storesService.approveStore(id);
-    }
-
-    @ApiOperation({ summary: 'API update store' })
-    @ApiBody({
-        type: UpdateStoreDto,
-        required: true,
-        description: 'Admin update store'
-    })
-    @ApiBearerAuth()
-    @UseGuards(AdminGuard)
-    @Put('/:id')
-    @HttpCode(201)
-    async updateStore(@UuidParam('id') id: string, @Body() payload: UpdateStoreDto) {
-        return await this.storesService.updateStore(id, payload);
-    }
-
-    @ApiOperation({ summary: 'API delete store' })
-    @ApiBearerAuth()
-    @UseGuards(AdminGuard)
-    @Delete('/:id')
-    @HttpCode(200)
-    async deleteStore(@UuidParam('id') id: string) {
-        return await this.storesService.deleteStore(id);
+        return await this.redeemItemsService.getRedeemItemsByStore(store.id, query);
     }
 
     @ApiOperation({ summary: 'API complete order' })

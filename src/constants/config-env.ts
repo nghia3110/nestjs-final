@@ -25,11 +25,11 @@ export const SECRET_KEY_SEND_GMAIL = process.env.SECRET_KEY_SEND_GMAIL || '57ec1
 export const SECRET_KEY_SEND_SMS = process.env.SECRET_KEY_SEND_SMS || '';
 export const OTP_TIME_EXPIRE = +process.env.OTP_TIME_EXPIRE || 300;
 
-// AWS
-export const AWS_ACCESS_KEY_ID = process.env.AWS_ACCESS_KEY_ID || 'AWS_ACCESS_KEY_ID';
-export const AWS_SECRET_ACCESS_KEY = process.env.AWS_SECRET_ACCESS_KEY || 'AWS_SECRET_ACCESS_KEY';
-export const AWS_BUCKET = process.env.AWS_BUCKET || 'AWS_BUCKET';
-export const S3_REGION = process.env.S3_REGION || 'S3_REGION';
+// Upload image service
+export const IMAGEKIT_PRIVATE_KEY = process.env.IMAGEKIT_PRIVATE_KEY || '';
+export const IMAGEKIT_PUBLIC_KEY = process.env.IMAGEKIT_PUBLIC_KEY || '';
+export const IMAGEKIT_URL_ENDPOINT = process.env.IMAGEKIT_URL_ENDPOINT || '';
+export const DEFAULT_ITEM_IMAGE = process.env.DEFAULT_ITEM_IMAGE || '';
 
 // Postgresql
 export const POSTGRES_HOST = process.env.POSTGRES_HOST || 'localhost';

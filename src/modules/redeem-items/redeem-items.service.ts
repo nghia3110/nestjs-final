@@ -3,7 +3,7 @@ import { GetListDto, RedeemDetail, RedeemItem, Store } from "src/database";
 import { IMessageResponse, IPaginationRes } from "src/interfaces";
 import { CreateArrayRedeemItemDto, CreateRedeemItemDto, UpdateRedeemItemDto } from "./dto";
 import { ErrorHelper } from "src/utils";
-import { ITEM } from "src/constants";
+import { DEFAULT_ITEM_IMAGE, ITEM } from "src/constants";
 import { RedeemItemsRepository } from "./redeem-items.repository";
 import { TStore } from "src/types";
 
@@ -66,6 +66,7 @@ export class RedeemItemsService {
         return this.redeemItemsRepository.create(
             {
                 ...body,
+                photo: DEFAULT_ITEM_IMAGE,       
                 storeId: store.id
             });
     }
@@ -73,6 +74,7 @@ export class RedeemItemsService {
     async createManyRedeemItems(body: CreateArrayRedeemItemDto, store: TStore): Promise<RedeemItem[]> {
         const items = body.items.map(item => ({
             ...item,
+            photo: DEFAULT_ITEM_IMAGE,
             storeId: store.id
         }));
 
@@ -109,5 +111,10 @@ export class RedeemItemsService {
                 where: { id: detail.itemId },
             });
         }
+    }
+
+    async saveImageForItem(itemId: string, imageUrl: string): Promise<RedeemItem[]> {
+        await this.getRedeemItemById(itemId);
+        return this.redeemItemsRepository.update({ photo: imageUrl }, { where: { id: itemId } });
     }
 }

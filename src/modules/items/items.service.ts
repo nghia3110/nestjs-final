@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { ITEM } from "src/constants";
+import { DEFAULT_ITEM_IMAGE, ITEM } from "src/constants";
 import { GetListDto, Item, OrderDetail, Store } from "src/database";
 import { IMessageResponse, IPaginationRes } from "src/interfaces";
 import { TStore } from "src/types";
@@ -65,6 +65,7 @@ export class ItemsService {
     async createItem(body: CreateItemDto, store: TStore): Promise<Item> {
         return this.itemsRepository.create({
             ...body,
+            photo: DEFAULT_ITEM_IMAGE,
             storeId: store.id
         });
     }
@@ -72,6 +73,7 @@ export class ItemsService {
     async createManyItems(body: CreateArrayItemDto, store: TStore): Promise<Item[]> {
         const items = body.items.map(item => ({
             ...item,
+            photo: DEFAULT_ITEM_IMAGE,
             storeId: store.id
         }));
 
@@ -111,5 +113,10 @@ export class ItemsService {
         return {
             message: ITEM.DELETE_SUCCESS
         }
+    }
+
+    async saveImageForItem(itemId: string, imageUrl: string): Promise<Item[]> {
+        await this.getItemById(itemId);
+        return this.itemsRepository.update({ photo: imageUrl }, { where: { id: itemId } });
     }
 }

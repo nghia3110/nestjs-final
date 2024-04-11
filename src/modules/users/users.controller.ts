@@ -1,7 +1,6 @@
 import {
   Body,
   Controller,
-  Delete,
   Get,
   HttpCode,
   Post,
@@ -13,13 +12,13 @@ import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { GetListDto } from 'src/database';
 import { TUser } from 'src/types';
-import { AdminGuard, User, UserGuard, UuidParam } from 'src/utils';
+import { User, UserGuard, UuidParam } from 'src/utils';
+import { RedeemItemsService } from '../redeem-items';
 import { RedeemsService } from '../redeems';
 import {
   CreateUserDto,
   LoginUserDto,
   SendUserOTPDto,
-  UpdateUserDto,
   VerifyUserOTPDto
 } from './dto';
 import { UsersService } from './users.service';
@@ -29,18 +28,9 @@ import { UsersService } from './users.service';
 export class UsersController {
   constructor(
     private usersService: UsersService,
-    private readonly redeemsService: RedeemsService
+    private readonly redeemsService: RedeemsService,
+    private readonly redeemItemsService: RedeemItemsService,
   ) { }
-
-  @ApiOperation({ summary: 'API get list users' })
-  @ApiBearerAuth()
-  @UseGuards(AdminGuard)
-  @Get()
-  @HttpCode(200)
-  async getListUsers(
-    @Query() query: GetListDto) {
-    return await this.usersService.getListUsers(query);
-  }
 
   @ApiOperation({ summary: 'API get redeem by user' })
   @ApiBearerAuth()
@@ -51,6 +41,15 @@ export class UsersController {
     return await this.redeemsService.getRedeemsByUser(query, user.id);
   }
 
+  @ApiOperation({ summary: 'API get redeem item in store' })
+  @ApiBearerAuth()
+  @UseGuards(UserGuard)
+  @Get('/get-redeem-item/store/:storeId')
+  @HttpCode(200)
+  async getRedeemItemsByStore(@Query() query: GetListDto, @UuidParam('storeId') storeId: string) {
+    return await this.redeemItemsService.getRedeemItemsByStore(storeId, query);
+  }
+
   @ApiOperation({ summary: 'API complete redeem' })
   @ApiBearerAuth()
   @UseGuards(UserGuard)
@@ -58,52 +57,6 @@ export class UsersController {
   @HttpCode(201)
   async completeOrder(@UuidParam('redeemId') redeemId: string, @User() user: TUser) {
     return await this.usersService.completeRedeem(redeemId, user.id);
-  }
-
-  @ApiOperation({ summary: 'API get user by Id' })
-  @ApiBearerAuth()
-  @UseGuards(AdminGuard)
-  @Get('/:id')
-  @HttpCode(200)
-  async getUserById(@UuidParam('id') id: string) {
-    return await this.usersService.getUserById(id);
-  }
-
-  @ApiOperation({ summary: 'API create user' })
-  @ApiBody({
-    type: CreateUserDto,
-    required: true,
-    description: 'Admin create user'
-  })
-  @ApiBearerAuth()
-  @UseGuards(AdminGuard)
-  @Post()
-  @HttpCode(201)
-  async createUser(@Body() payload: CreateUserDto) {
-    return await this.usersService.createUser(payload);
-  }
-
-  @ApiOperation({ summary: 'API update user' })
-  @ApiBody({
-    type: UpdateUserDto,
-    required: true,
-    description: 'Admin update user'
-  })
-  @ApiBearerAuth()
-  @UseGuards(AdminGuard)
-  @Put('/:id')
-  @HttpCode(201)
-  async updateUser(@UuidParam('id') id: string, @Body() payload: UpdateUserDto) {
-    return await this.usersService.updateUser(id, payload);
-  }
-
-  @ApiOperation({ summary: 'API delete user' })
-  @ApiBearerAuth()
-  @UseGuards(AdminGuard)
-  @Delete('/:id')
-  @HttpCode(200)
-  async deleteUser(@UuidParam('id') id: string) {
-    await this.usersService.deleteUser(id);
   }
 
   @ApiOperation({ summary: 'API Login' })

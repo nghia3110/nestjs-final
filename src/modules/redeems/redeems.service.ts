@@ -4,7 +4,7 @@ import { GetListDto, Redeem, RedeemDetail, Store, User } from "src/database";
 import { IMessageResponse, IPaginationRes } from "src/interfaces";
 import { ErrorHelper } from "src/utils";
 import {
-    CreateManyDetailsDto,
+    CreateManyRedeemDetailsDto,
     CreateRedeemDetailDto,
     RedeemDetailsService,
     UpdateRedeemDetailDto
@@ -150,7 +150,7 @@ export class RedeemsService {
         return this.redeemDetailsService.createRedeemDetail(body);
     }
 
-    async createManyRedeemDetails(body: CreateManyDetailsDto): Promise<RedeemDetail[]> {
+    async createManyRedeemDetails(body: CreateManyRedeemDetailsDto): Promise<RedeemDetail[]> {
         await this.getRedeemById(body.redeemId);
 
         return this.redeemDetailsService.createManyRedeemDetails(body);

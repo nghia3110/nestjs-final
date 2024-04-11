@@ -20,6 +20,7 @@ import {
     AccumulateMethod,
     GetListDto,
     Store,
+    User,
 } from "src/database";
 import {
     IHashResponse,
@@ -37,10 +38,11 @@ import {
 } from "src/utils";
 import { MethodsService } from "../methods";
 import { OrdersService } from "../orders";
-import { UserOrderService } from "../user-order";
 import { CreateStoreDto, UpdateStoreDto } from "./dto";
 import { LoginDto } from "./dto/login.dto";
 import { StoresRepository } from "./stores.repository";
+import { UsersService } from "../users";
+import { MethodDetailsService } from "../method-details";
 
 @Injectable()
 export class StoresService {
@@ -48,7 +50,8 @@ export class StoresService {
         private readonly storesRepository: StoresRepository,
         private readonly methodsService: MethodsService,
         private readonly ordersService: OrdersService,
-        private userOrderService: UserOrderService,
+        private readonly usersService: UsersService,
+        private readonly methodDetailsService: MethodDetailsService,
         private sequelize: Sequelize
     ) { }
 
@@ -94,6 +97,14 @@ export class StoresService {
             ErrorHelper.BadRequestException(STORE.STORE_NOT_FOUND);
         }
         return store;
+    }
+
+    async getUsersInStore(storeId: string, paginateInfo: GetListDto): Promise<IPaginationRes<User>> {
+        const orders = await this.ordersService.getOrdersByStore(storeId);
+
+        const userIds = orders.map(order => order.userId);
+
+        return this.usersService.getUsersByIds(userIds, paginateInfo);
     }
 
     async checkExistEmail(email: string): Promise<void> {
@@ -171,7 +182,24 @@ export class StoresService {
 
         const transaction = await this.sequelize.transaction();
         try {
-            await this.userOrderService.processOrder(orderId, store, order.userId);
+            const user = await this.usersService.getUserById(order.userId);
+            const orderAmount = await this.ordersService.calcOrderAmount(orderId);
+
+            await this.ordersService.updateOrder(orderId,
+                {
+                    status: EStatus.SUCCESS
+                },
+                store.id);
+
+            const methodDetail = await this.methodDetailsService.getMethodDetail(store.methodId, user.rankId);
+            const bonusPoints = this.ordersService.calculatePoints(methodDetail, orderAmount);
+
+            await this.usersService.updateUser(user.id, {
+                totalPoints: user.totalPoints + bonusPoints,
+                currentPoints: user.currentPoints + bonusPoints
+            });
+
+            await this.usersService.checkPromoteRank(user.id);
 
             await transaction.commit();
             return {

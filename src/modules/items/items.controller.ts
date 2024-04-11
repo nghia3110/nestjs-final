@@ -7,9 +7,11 @@ import {
     Post,
     Put,
     Query,
-    UseGuards
+    UploadedFile,
+    UseGuards,
+    UseInterceptors
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { GetListDto } from 'src/database';
 import { TStore } from 'src/types';
@@ -20,11 +22,16 @@ import {
     UpdateItemDto,
 } from './dto';
 import { ItemsService } from './items.service';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { UploadService, multerOptions } from '../uploads';
 
 @ApiTags('items')
 @Controller('items')
 export class ItemsController {
-    constructor(private itemsService: ItemsService) { }
+    constructor(
+        private itemsService: ItemsService,
+        private uploadService: UploadService
+    ) { }
 
     @ApiOperation({ summary: 'API get list items' })
     @ApiBearerAuth()
@@ -55,7 +62,10 @@ export class ItemsController {
     @UseGuards(StoreGuard)
     @Post()
     @HttpCode(201)
-    async createItem(@Body() payload: CreateItemDto, @Store() store: TStore) {
+    async createItem(
+        @Body() payload: CreateItemDto,
+        @Store() store: TStore
+    ) {
         return await this.itemsService.createItem(payload, store);
     }
 
@@ -94,5 +104,32 @@ export class ItemsController {
     @HttpCode(200)
     async deleteItem(@UuidParam('id') id: string, @Store() store: TStore) {
         return await this.itemsService.deleteItem(id, store);
+    }
+
+    @ApiOperation({ summary: 'API upload image' })
+    @ApiConsumes('multipart/form-data')
+    @ApiBody({
+        schema: {
+            type: 'object',
+            properties: {
+                image: {
+                    type: 'string',
+                    format: 'binary',
+                },
+            },
+        },
+        required: true,
+        description: 'Upload image',
+    })
+    @ApiBearerAuth()
+    @UseGuards(StoreGuard)
+    @Post('/:itemId/upload-image')
+    @HttpCode(201)
+    @UseInterceptors(FileInterceptor('image', multerOptions.imageFilter))
+    async multerUpload(
+        @UuidParam('itemId') itemId: string,
+        @UploadedFile('') image: Express.Multer.File) {
+        const result = await this.uploadService.multerUpload(image);
+        return await this.itemsService.saveImageForItem(itemId, result.url);
     }
 }
