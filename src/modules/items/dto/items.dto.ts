@@ -40,12 +40,9 @@ export class CreateItemDto {
   })
   quantityInStock: number;
 
-  @ApiProperty({
-    type: String,
-    description: 'Photo',
-  })
   photo: string;
 
+  @IsString()
   @ApiProperty({
     type: String,
     description: 'Description',

@@ -32,6 +32,7 @@ export class MethodDetailsService {
                 }
             ],
             attributes: { exclude: ['rankId', 'methodId'] },
+            order: [['createdAt', 'ASC']],
             raw: false,
             nest: true
         });

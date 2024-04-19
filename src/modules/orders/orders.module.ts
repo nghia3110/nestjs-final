@@ -4,7 +4,6 @@ import { SequelizeModule } from '@nestjs/sequelize';
 import { Order } from 'src/database';
 import { ItemsModule } from '../items';
 import { OrderDetailsModule } from '../order-details';
-import { UsersModule } from '../users';
 import { OrdersController } from './orders.controller';
 import { OrdersRepository } from './orders.repository';
 import { OrdersService } from './orders.service';
@@ -12,7 +11,6 @@ import { OrdersService } from './orders.service';
 @Module({
     imports: [
         SequelizeModule.forFeature([Order]),
-        UsersModule,
         OrderDetailsModule,
         ItemsModule
     ],

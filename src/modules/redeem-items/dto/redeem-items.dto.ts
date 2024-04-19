@@ -52,12 +52,9 @@ export class CreateRedeemItemDto {
   })
   expiredTime: string;
 
-  @ApiProperty({
-    type: String,
-    description: 'Photo',
-  })
   photo: string;
 
+  @IsString()
   @ApiProperty({
     type: String,
     description: 'Description',

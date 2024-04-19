@@ -1,40 +1,32 @@
 import { Injectable } from '@nestjs/common';
-import AWS from 'aws-sdk';
-import { BASE_URL } from 'src/constants';
+import ImageKit from 'imagekit';
+import {
+  IMAGEKIT_PRIVATE_KEY,
+  IMAGEKIT_PUBLIC_KEY,
+  IMAGEKIT_URL_ENDPOINT
+} from 'src/constants';
 import { ICommonUploadFile } from 'src/interfaces';
-
-import { amazonS3Options } from './options/amazon-s3.option';
 
 @Injectable()
 export class UploadService {
-  private S3: AWS.S3;
-  private BUCKET: string;
-
+  private imageKit: ImageKit
   constructor() {
-    this.S3 = amazonS3Options.S3;
-    this.BUCKET = amazonS3Options.bucket;
+    this.imageKit = new ImageKit({
+      privateKey: IMAGEKIT_PRIVATE_KEY,
+      publicKey: IMAGEKIT_PUBLIC_KEY,
+      urlEndpoint: IMAGEKIT_URL_ENDPOINT
+    })
   }
 
-  multerUpload(file: Express.Multer.File): ICommonUploadFile {
+  async multerUpload(file: Express.Multer.File): Promise<ICommonUploadFile> {
+    const result = await this.imageKit.upload({
+      file: file.buffer,
+      fileName: file.originalname,
+    });
+    
     return {
       title: file.originalname,
-      url: BASE_URL + file.path,
-    };
-  }
-  async amazonUpload(file: Express.Multer.File): Promise<ICommonUploadFile> {
-    const blobName = `${new Date().getTime()}-${file.originalname}`;
-    const params = {
-      ContentType: 'image/jpeg',
-      Bucket: this.BUCKET,
-      Key: blobName,
-      Body: file.buffer,
-      ACL: 'public-read',
-      ContentDisposition: `filename=${blobName}`,
-    };
-    const uploadedBlob: AWS.S3.ManagedUpload.SendData = await this.S3.upload(params).promise();
-    return {
-      title: file.originalname,
-      url: uploadedBlob?.Location || '',
+      url: result.url
     };
   }
 }

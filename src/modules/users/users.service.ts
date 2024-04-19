@@ -20,6 +20,7 @@ import {
   IHashResponse,
   IMessageResponse,
   IPaginationRes,
+  IProcessRedeemRes,
   IToken,
   IVerifyOTPData,
   TVerifyOTPRes
@@ -33,14 +34,12 @@ import {
 
 import { Op } from 'sequelize';
 import { Sequelize } from 'sequelize-typescript';
-import { GetListDto, Rank, Redeem, User } from 'src/database';
+import { GetListDto, Rank, User } from 'src/database';
 import { RanksService } from '../ranks/ranks.service';
 import {
-  CreateRedeemDto,
   RedeemsService
 } from '../redeems';
 import { SmsService } from '../sms/sms.service';
-import { StoresService } from '../stores';
 import { CreateUserDto, LoginUserDto, UpdateUserDto } from './dto';
 import { UsersRepository } from './users.repository';
 
@@ -49,7 +48,6 @@ export class UsersService {
   constructor(
     private readonly usersRepository: UsersRepository,
     private readonly ranksService: RanksService,
-    private readonly storesService: StoresService,
     private readonly redeemsService: RedeemsService,
     private readonly smsService: SmsService,
     private sequelize: Sequelize,
@@ -58,11 +56,16 @@ export class UsersService {
   async getListUsers(paginateInfo: GetListDto): Promise<IPaginationRes<User>> {
     const { page, limit } = paginateInfo;
     return this.usersRepository.paginate(parseInt(page), parseInt(limit), {
+      where: {
+        isAdmin: {[Op.ne]: 'true'}
+      },
       include: [{
         model: Rank,
-        as: 'rank'
+        as: 'rank',
+        attributes: ['name']
       }],
       attributes: { exclude: ['password', 'rankId'] },
+      order: [['lastName', 'DESC']],
       raw: false,
       nest: true
     });
@@ -100,12 +103,23 @@ export class UsersService {
         attributes: ['name']
       }],
       attributes: { exclude: ['password', 'rankId'] },
+      order: [['lastName', 'DESC']],
       raw: false,
       nest: true
     });
   }
 
-  async checkConflictInfo(email: string, phoneNumber: string): Promise<void> {
+  async getUserByEmail(email: string): Promise<User> {
+    const user = await this.usersRepository.findOne({
+      where: { email }
+    })
+    if (!user) {
+      ErrorHelper.BadRequestException(USER.USER_NOT_FOUND);
+    }
+    return user;
+  }
+
+  async checkConflictInfo(email: string = '', phoneNumber: string = ''): Promise<void> {
     const user = await this.usersRepository.findOne({
       where: {
         [Op.or]: {
@@ -127,28 +141,59 @@ export class UsersService {
 
     const hashPassword = await EncryptHelper.hash(body.password);
 
-    return this.usersRepository.create(
+    const newUser = await this.usersRepository.create(
       {
         ...body,
         password: hashPassword,
         isVerified: true,
         rankId: rank.id
       })
+
+    return this.usersRepository.findOne({
+      where: { id: newUser.id },
+      include: [{
+        model: Rank,
+        as: 'rank',
+        attributes: ['name']
+      }],
+      attributes: { exclude: ['password', 'rankId'] },
+      raw: false,
+      nest: true
+    });
   }
 
-  async updateUser(id: string, body: UpdateUserDto): Promise<User[]> {
+  async updateUser(id: string, body: UpdateUserDto): Promise<User> {
     const user = await this.getUserById(id);
+
+    if(user.isAdmin) {
+      ErrorHelper.BadRequestException(USER.NOT_UPDATE_ADMIN);
+    }
 
     if ((body.email && body.email !== user.email)
       || (body.phoneNumber && body.phoneNumber !== user.phoneNumber)) {
       await this.checkConflictInfo(body.email, body.phoneNumber);
     }
 
-    return this.usersRepository.update(body, { where: { id } });
+    await this.usersRepository.update(body, { where: { id } });
+    return this.usersRepository.findOne({
+      where: { id },
+      include: [{
+        model: Rank,
+        as: 'rank',
+        attributes: ['name']
+      }],
+      attributes: { exclude: ['password', 'rankId'] },
+      raw: false,
+      nest: true
+    });
   }
 
   async deleteUser(id: string): Promise<IMessageResponse> {
-    await this.getUserById(id);
+    const user = await this.getUserById(id);
+
+    if(user.isAdmin) {
+      ErrorHelper.BadRequestException(USER.NOT_DELETE_ADMIN);
+    }
 
     const deleteResult = await this.usersRepository.delete({ where: { id } });
     if (deleteResult <= 0) {
@@ -159,13 +204,7 @@ export class UsersService {
     }
   }
 
-  async createRedeem(body: CreateRedeemDto, userId: string): Promise<Redeem> {
-    await this.storesService.getStoreById(body.storeId);
-
-    return this.redeemsService.createRedeem(body, userId);
-  }
-
-  async completeRedeem(redeemId: string, userId: string): Promise<IMessageResponse> {
+  async completeRedeem(redeemId: string, userId: string): Promise<IProcessRedeemRes> {
     const redeem = await this.redeemsService.getRedeemById(redeemId);
 
     if (redeem.userId !== userId) {
@@ -183,25 +222,19 @@ export class UsersService {
       const totalPoints = await this.redeemsService.calcRedeemPoints(redeemId);
 
       if (totalPoints > user.currentPoints) {
-        ErrorHelper.BadRequestException(REDEEM.COMPLETE_REDEEM_FAILED);
+        ErrorHelper.BadRequestException(REDEEM.COMPLETE_REDEEM_FAILED(user.currentPoints, totalPoints));
       }
 
-      await this.redeemsService.updateRedeem(
-        redeemId,
-        {
-          status: EStatus.SUCCESS
-        },
-        user.id);
+      await this.redeemsService.processRedeem(redeemId);
 
       await this.updateUser(user.id, {
         currentPoints: user.currentPoints - totalPoints
       });
 
-      await this.checkPromoteRank(user.id);
-
       await transaction.commit();
       return {
-        message: REDEEM.COMPLETE_REDEEM_SUCCESS
+        totalPoints,
+        status: EStatus.SUCCESS
       }
     } catch (error) {
       await transaction.rollback();
@@ -212,13 +245,16 @@ export class UsersService {
   async checkPromoteRank(userId: string): Promise<void> {
     const user = await this.getUserById(userId);
     let newRank: string;
-    if (user.totalPoints >= EPromotePoint.SILVER) {
-      const silverRank = await this.ranksService.findByName(ERank.SILVER);
-      newRank = silverRank.id;
-    }
     if (user.totalPoints >= EPromotePoint.GOLD) {
       const goldRank = await this.ranksService.findByName(ERank.GOLD);
       newRank = goldRank.id;
+    } else {
+      if (user.totalPoints >= EPromotePoint.SILVER) {
+        const silverRank = await this.ranksService.findByName(ERank.SILVER);
+        newRank = silverRank.id;
+      } else {
+        return;
+      }
     }
     await this.usersRepository.update({
       rankId: newRank
@@ -245,46 +281,35 @@ export class UsersService {
       ErrorHelper.BadRequestException(USER.INVALID_PASSWORD);
     }
 
-    const hashData: IHashAuthData = {
-      id: user.id,
-      phoneNumber: user.phoneNumber,
-      isAdmin: user.isAdmin,
-      isLogin: true
+    if (!user.isVerified) {
+      ErrorHelper.BadRequestException(USER.USER_NOT_VERIFIED);
     }
 
-    const hashCode = CommonHelper.hashData(
-      JSON.stringify(hashData)
-    );
+    const hashCodeSendOtp = await this.sendOTP(user.phoneNumber);
 
     return {
-      hash: hashCode
+      hash: hashCodeSendOtp.hash
     };
   }
 
   async register(body: CreateUserDto): Promise<IHashResponse> {
     await this.checkConflictInfo(body.email, body.phoneNumber);
 
+    const rank = await this.ranksService.findByName(ERank.BRONZE);
+
     const hashPassword = await EncryptHelper.hash(body.password);
 
     const newUser = await this.usersRepository.create(
       {
         ...body,
-        password: hashPassword
+        password: hashPassword,
+        rankId: rank.id
       });
 
-    const hashData: IHashAuthData = {
-      id: newUser.id,
-      phoneNumber: newUser.phoneNumber,
-      isAdmin: newUser.isAdmin,
-      isLogin: false
-    };
-
-    const hashCode = CommonHelper.hashData(
-      JSON.stringify(hashData)
-    );
+    const hashCodeSendOtp = await this.sendOTP(newUser.phoneNumber, false)
 
     return {
-      hash: hashCode
+      hash: hashCodeSendOtp.hash
     };
   }
 
@@ -307,16 +332,15 @@ export class UsersService {
     };
   }
 
-  async sendOTP(phoneNumber: string, hash: string): Promise<IHashResponse> {
-    const checkHashInfo = CommonHelper.checkHashData(hash);
-    if (!checkHashInfo) {
-      ErrorHelper.BadRequestException(APPLICATION.VERIFY_FAIL);
-    }
+  async sendOTP(phoneNumber: string, isLogin: boolean = true): Promise<IHashResponse> {
+    const user = await this.usersRepository.findOne({
+      where: {
+        phoneNumber
+      }
+    });
 
-    const hashInfo = JSON.parse(checkHashInfo) as IHashAuthData;
-
-    if (hashInfo.phoneNumber !== phoneNumber) {
-      ErrorHelper.InternalServerErrorException(APPLICATION.HASH_IS_NOT_CORRECT);
+    if(!user) {
+      ErrorHelper.BadRequestException(USER.USER_NOT_FOUND);
     }
 
     const OTP = CommonHelper.generateOTP();
@@ -326,10 +350,17 @@ export class UsersService {
       otp: OTP
     });
 
+    const userInfo: IHashAuthData = {
+      id: user.id,
+      isAdmin: user.isAdmin,
+      isLogin,
+      phoneNumber
+    }
+
     const verifyOTPData: IVerifyOTPData = {
       otp: OTP,
       time: moment().add(OTP_TIME_EXPIRE, 'second').valueOf(),
-      data: hashInfo
+      data: userInfo
     }
 
     const hashCode = CommonHelper.hashData(

@@ -5,5 +5,8 @@ export const USER = {
   CONFLICT: 'Email and phone number must be unique! Please try again!',
   DELETE_SUCCESS: 'Delete user successfully!',
   DELETE_FAILED: 'Delete user failed!',
-  VERIFY_OTP_SUCCESS: 'Verify OTP success. Now you can log in with your credentials!'
+  VERIFY_OTP_SUCCESS: 'Verify OTP success. Now you can log in with your credentials!',
+  USER_NOT_VERIFIED: 'Your account is not verified. Please use OTP in your email or get the OTP again!',
+  NOT_UPDATE_ADMIN: 'Can not update administrator account!',
+  NOT_DELETE_ADMIN: 'Can not delete administrator account!'
 };

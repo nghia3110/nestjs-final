@@ -28,6 +28,17 @@ export interface ILoginResponse {
   token: IToken,
 }
 
+export interface IProcessOrderRes {
+  totalAmount: number,
+  bonusPoints: number,
+  status: string
+}
+
+export interface IProcessRedeemRes {
+  totalPoints: number,
+  status: string
+}
+
 export type TVerifyOTPRes = ILoginResponse | IMessageResponse;
 
 export interface IOrderAmount {

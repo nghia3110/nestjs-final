@@ -10,14 +10,6 @@ export class SendOTPDto {
     example: 'youremail@email.com',
   })
   email: string;
-
-  @IsString()
-  @ApiProperty({
-    type: String,
-    description: 'Your hash',
-    example: 'string',
-  })
-  hash: string;
 }
 
 export class VerifyOTPDto {

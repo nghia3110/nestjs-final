@@ -24,7 +24,7 @@ export class OrderDetailsController {
     @HttpCode(200)
     async getListOrderDetails(
         @Query() query: GetListDto) {
-        return await this.orderDetailsService.getListOrderDetails(query);
+        return this.orderDetailsService.getListOrderDetails(query);
     }
 
     @ApiOperation({ summary: 'API get order detail by Id' })
@@ -33,7 +33,7 @@ export class OrderDetailsController {
     @Get('/:id')
     @HttpCode(200)
     async getOrderDetailById(@UuidParam('id') id: string) {
-        return await this.orderDetailsService.getOrderDetailById(id);
+        return this.orderDetailsService.getOrderDetailById(id);
     }
 
     @ApiOperation({ summary: 'API delete order detail' })
@@ -42,6 +42,6 @@ export class OrderDetailsController {
     @Delete('/:id')
     @HttpCode(200)
     async deleteOrderDetail(@UuidParam('id') id: string) {
-        return await this.orderDetailsService.deleteOrderDetail(id);
+        return this.orderDetailsService.deleteOrderDetail(id);
     }
 }

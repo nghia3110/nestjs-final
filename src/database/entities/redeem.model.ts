@@ -4,13 +4,17 @@ import { RedeemItem } from "./redeem-items.model";
 import { RedeemDetail } from "./redeem-details.model";
 import { BaseModel } from "../base.model";
 import { Store } from "./stores.model";
+import { EStatus } from "src/constants";
 
 @Table({
     tableName: 'redeem',
     underscored: true
 })
 export class Redeem extends BaseModel {
-    @Column
+    @Column({
+        type: DataType.STRING,
+        defaultValue: EStatus.PENDING
+    })
     status: string;
 
     @ForeignKey(() => User)

@@ -39,11 +39,10 @@ export class CreateRedeemDetailDto {
 }
 
 export class UpdateRedeemDetailDto extends PartialType(CreateRedeemDetailDto) { 
-    @IsString()
-    status: string;
+    status?: string;
 }
 
-class RedeemItemDetail {
+export class RedeemItemDetail {
     @IsUUID()
     @IsString()
     @IsNotEmpty({ message: REQUIRED_VALIDATE('itemId') })
@@ -61,10 +60,10 @@ class RedeemItemDetail {
     quantityRedeem: number;
 }
 
-export class CreateManyDetailsDto {
+export class CreateManyRedeemDetailsDto {
     @IsUUID()
     @IsString()
-    @IsNotEmpty({ message: REQUIRED_VALIDATE('orderId') })
+    @IsNotEmpty({ message: REQUIRED_VALIDATE('redeemId') })
     @ApiProperty({
         type: String,
     })

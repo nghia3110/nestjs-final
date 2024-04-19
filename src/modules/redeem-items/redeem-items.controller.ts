@@ -7,13 +7,23 @@ import {
     Post,
     Put,
     Query,
-    UseGuards
+    UploadedFile,
+    UseGuards,
+    UseInterceptors
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+    ApiBearerAuth,
+    ApiBody,
+    ApiConsumes,
+    ApiOperation,
+    ApiTags
+} from '@nestjs/swagger';
 
+import { FileInterceptor } from '@nestjs/platform-express';
 import { GetListDto } from 'src/database';
 import { TStore } from 'src/types';
 import { AdminGuard, Store, StoreGuard, UuidParam } from 'src/utils';
+import { UploadService, multerOptions } from '../uploads';
 import {
     CreateArrayRedeemItemDto,
     CreateRedeemItemDto,
@@ -24,7 +34,10 @@ import { RedeemItemsService } from './redeem-items.service';
 @ApiTags('redeem-items')
 @Controller('redeem-items')
 export class RedeemItemsController {
-    constructor(private redeemItemsService: RedeemItemsService) { }
+    constructor(
+        private redeemItemsService: RedeemItemsService,
+        private uploadService: UploadService
+    ) { }
 
     @ApiOperation({ summary: 'API get list redeemItems' })
     @ApiBearerAuth()
@@ -33,7 +46,7 @@ export class RedeemItemsController {
     @HttpCode(200)
     async getListRedeemItems(
         @Query() query: GetListDto) {
-        return await this.redeemItemsService.getListRedeemItems(query);
+        return this.redeemItemsService.getListRedeemItems(query);
     }
 
     @ApiOperation({ summary: 'API get redeemItem by Id' })
@@ -42,7 +55,7 @@ export class RedeemItemsController {
     @Get('/:id')
     @HttpCode(200)
     async getRedeemItemById(@UuidParam('id') id: string) {
-        return await this.redeemItemsService.getRedeemItemById(id);
+        return this.redeemItemsService.getRedeemItemById(id);
     }
 
     @ApiOperation({ summary: 'API create redeem item' })
@@ -56,7 +69,7 @@ export class RedeemItemsController {
     @Post()
     @HttpCode(201)
     async createRedeemItem(@Body() payload: CreateRedeemItemDto, @Store() store: TStore) {
-        return await this.redeemItemsService.createRedeemItem(payload, store);
+        return this.redeemItemsService.createRedeemItem(payload, store);
     }
 
     @ApiOperation({ summary: 'API create redeem items' })
@@ -72,7 +85,7 @@ export class RedeemItemsController {
     async createManyRedeemItems(
         @Body() payload: CreateArrayRedeemItemDto,
         @Store() store: TStore) {
-        return await this.redeemItemsService.createManyRedeemItems(payload, store);
+        return this.redeemItemsService.createManyRedeemItems(payload, store);
     }
 
     @ApiOperation({ summary: 'API update redeemItem' })
@@ -86,7 +99,7 @@ export class RedeemItemsController {
     @Put('/:id')
     @HttpCode(201)
     async updateRedeemItem(@UuidParam('id') id: string, @Body() payload: UpdateRedeemItemDto, @Store() store: TStore) {
-        return await this.redeemItemsService.updateRedeemItem(id, payload, store);
+        return this.redeemItemsService.updateRedeemItem(id, payload, store);
     }
 
     @ApiOperation({ summary: 'API delete redeemItem' })
@@ -95,6 +108,33 @@ export class RedeemItemsController {
     @Delete('/:id')
     @HttpCode(200)
     async deleteRedeemItem(@UuidParam('id') id: string, @Store() store: TStore) {
-        return await this.redeemItemsService.deleteRedeemItem(id, store);
+        return this.redeemItemsService.deleteRedeemItem(id, store);
+    }
+
+    @ApiOperation({ summary: 'API upload image' })
+    @ApiConsumes('multipart/form-data')
+    @ApiBody({
+        schema: {
+            type: 'object',
+            properties: {
+                image: {
+                    type: 'string',
+                    format: 'binary',
+                },
+            },
+        },
+        required: true,
+        description: 'Upload image',
+    })
+    @ApiBearerAuth()
+    @UseGuards(StoreGuard)
+    @Post('/:id/upload-image')
+    @HttpCode(201)
+    @UseInterceptors(FileInterceptor('image', multerOptions.imageFilter))
+    async multerUpload(
+        @UuidParam('id') itemId: string,
+        @UploadedFile('') image: Express.Multer.File) {
+        const result = await this.uploadService.multerUpload(image);
+        return this.redeemItemsService.saveImageForItem(itemId, result.url);
     }
 }
