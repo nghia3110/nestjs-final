@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { REDEEM } from "src/constants";
+import { EStatus, REDEEM } from "src/constants";
 import { GetListDto, Redeem, RedeemDetail, Store, User } from "src/database";
 import { IMessageResponse, IPaginationRes } from "src/interfaces";
 import { ErrorHelper } from "src/utils";
@@ -94,17 +94,29 @@ export class RedeemsService {
     async calcRedeemPoints(redeemId: string): Promise<number> {
         const redeemDetails = await this.redeemDetailsService.getRedeemDetailsByRedeem(redeemId);
 
+        if(redeemDetails.length === 0) {
+            ErrorHelper.BadRequestException(REDEEM.NOT_ENOUGH_ITEM);
+        }
+
         const totalPoints = redeemDetails.reduce((total, currentDetail) => {
-            return total + currentDetail.quantityRedeem;
+            return total + currentDetail.quantityRedeem * currentDetail.item.exchangePoint;
         }, 0);
 
+        return totalPoints;
+    }
+
+    async processRedeem(redeemId: string): Promise<void> {
+        const redeemDetails = await this.redeemDetailsService.getRedeemDetailsByRedeem(redeemId);
+        
         await this.redeemItemsService.updateRedeemItemsQuantity(redeemDetails);
 
         const redeemDetailsIds = redeemDetails.map(detail => detail.id);
+        await this.redeemsRepository.update(
+            {
+                status: EStatus.SUCCESS
+            }, { where: { id: redeemId } });
 
         await this.redeemDetailsService.updateStatusRedeemDetails(redeemDetailsIds);
-
-        return totalPoints;
     }
 
     async createRedeem(body: CreateRedeemDto, userId: string): Promise<Redeem> {
@@ -164,5 +176,15 @@ export class RedeemsService {
         }
 
         return this.redeemDetailsService.updateRedeemDetail(id, body, redeemDetail);
+    }
+
+    async getDetails(paginateInfo: GetListDto, redeemId: string, userId: string): Promise<IPaginationRes<RedeemDetail>> {
+        const redeem = await this.getRedeemById(redeemId);
+
+        if (redeem.userId !== userId) {
+            ErrorHelper.BadRequestException(REDEEM.REDEEM_NOT_FOUND);
+        }
+
+        return this.redeemDetailsService.paginateDetailByRedeem(paginateInfo, redeemId);
     }
 }

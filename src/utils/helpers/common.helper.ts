@@ -22,4 +22,10 @@ export class CommonHelper {
     max = Math.floor(max);
     return Math.floor(Math.random() * (max - min + 1)) + min;
   }
+
+  static isValidRedeemDate(value: Date, target: Date): boolean {
+    value.setHours(0,0,0,0);
+    target.setHours(0,0,0,0);
+    return value >= target;
+  }
 }

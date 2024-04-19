@@ -27,6 +27,7 @@ import {
     ILoginResponse,
     IMessageResponse,
     IPaginationRes,
+    IProcessOrderRes,
     IToken,
 } from "src/interfaces";
 import {
@@ -64,6 +65,7 @@ export class StoresService {
                 attributes: ['name']
             }],
             attributes: { exclude: ['password', 'methodId'] },
+            order: [['name', 'DESC']],
             raw: false,
             nest: true
         });
@@ -124,16 +126,29 @@ export class StoresService {
 
         const hashPassword = await EncryptHelper.hash(body.password);
 
-        return this.storesRepository.create(
+        const newStore = await this.storesRepository.create(
             {
                 ...body,
                 password: hashPassword,
                 isVerified: true,
                 isApproved: true
-            })
+            });
+        return this.storesRepository.findOne({
+            where: {
+                id: newStore.id
+            },
+            include: [{
+                model: AccumulateMethod,
+                as: 'method',
+                attributes: ['name']
+            }],
+            attributes: { exclude: ['password'] },
+            raw: false,
+            nest: true
+        })
     }
 
-    async updateStore(id: string, body: UpdateStoreDto): Promise<Store[]> {
+    async updateStore(id: string, body: UpdateStoreDto): Promise<Store> {
         const store = await this.getStoreById(id);
 
         if (body.email && body.email !== store.email) {
@@ -144,7 +159,20 @@ export class StoresService {
             await this.methodsService.findById(body.methodId);
         }
 
-        return this.storesRepository.update(body, { where: { id } });
+        await this.storesRepository.update(body, { where: { id } });
+        return this.storesRepository.findOne({
+            where: {
+                id
+            },
+            include: [{
+                model: AccumulateMethod,
+                as: 'method',
+                attributes: ['name']
+            }],
+            attributes: { exclude: ['password'] },
+            raw: false,
+            nest: true
+        })
     }
 
     async deleteStore(id: string): Promise<IMessageResponse> {
@@ -161,13 +189,26 @@ export class StoresService {
         }
     }
 
-    async approveStore(id: string): Promise<Store[]> {
+    async approveStore(id: string): Promise<Store> {
         await this.getStoreById(id);
 
-        return this.storesRepository.update({ isApproved: true }, { where: { id } });
+        await this.storesRepository.update({ isApproved: true }, { where: { id } });
+        return this.storesRepository.findOne({
+            where: {
+                id: id
+            },
+            include: [{
+                model: AccumulateMethod,
+                as: 'method',
+                attributes: ['name']
+            }],
+            attributes: { exclude: ['password'] },
+            raw: false,
+            nest: true
+        })
     }
 
-    async completeOrder(orderId: string, storeId: string): Promise<IMessageResponse> {
+    async completeOrder(orderId: string, storeId: string): Promise<IProcessOrderRes> {
         const order = await this.ordersService.getOrderById(orderId);
 
         if (order.storeId !== storeId) {
@@ -185,11 +226,7 @@ export class StoresService {
             const user = await this.usersService.getUserById(order.userId);
             const orderAmount = await this.ordersService.calcOrderAmount(orderId);
 
-            await this.ordersService.updateOrder(orderId,
-                {
-                    status: EStatus.SUCCESS
-                },
-                store.id);
+            await this.ordersService.processOrder(orderId);
 
             const methodDetail = await this.methodDetailsService.getMethodDetail(store.methodId, user.rankId);
             const bonusPoints = this.ordersService.calculatePoints(methodDetail, orderAmount);
@@ -203,7 +240,9 @@ export class StoresService {
 
             await transaction.commit();
             return {
-                message: ORDER.COMPLETE_ORDER_SUCCESS
+                totalAmount: orderAmount,
+                bonusPoints,
+                status: EStatus.SUCCESS
             }
         } catch (error) {
             await transaction.rollback();
@@ -224,12 +263,10 @@ export class StoresService {
                 password: hashPassword
             });
 
-        const hashCode = md5(
-            newStore.email + SECRET_KEY_SEND_GMAIL
-        );
+        const hashCode = await this.sendOTP(newStore.email);
 
         return {
-            hash: hashCode
+            hash: hashCode.hash
         };
     }
 
@@ -284,14 +321,12 @@ export class StoresService {
         };
     }
 
-    async sendOTP(email: string, hash: string): Promise<IHashResponse> {
-        const checkHash = md5(
-            email + SECRET_KEY_SEND_GMAIL,
-        );
-
-        if (checkHash !== hash) {
-            ErrorHelper.InternalServerErrorException(APPLICATION.HASH_IS_NOT_CORRECT);
-        }
+    async sendOTP(email: string): Promise<IHashResponse> {
+        await this.storesRepository.findOne({
+            where: {
+                email
+            }
+        });
 
         const OTP = CommonHelper.generateOTP();
         SendEmailHelper.sendOTP({
@@ -305,7 +340,6 @@ export class StoresService {
                 otp: OTP,
                 time: moment().add(OTP_TIME_EXPIRE, 'second').valueOf(),
                 email,
-                isVerified: false,
             }),
         );
         return {
@@ -327,8 +361,6 @@ export class StoresService {
         if (otp !== hashInfo.otp) {
             ErrorHelper.InternalServerErrorException(OTP.OTP_INVALID);
         }
-
-        await this.getStoreByEmail(hashInfo.email);
 
         await this.storesRepository.update(
             { isVerified: true },

@@ -5,4 +5,5 @@ export const ORDER = {
     STATUS_NOT_CHANGED: 'Please change the order status!',
     ORDER_ALREADY_SUCCESS: 'This order is already success!',
     COMPLETE_ORDER_SUCCESS: 'Complete order successfully!',
+    NOT_ENOUGH_ITEM: 'Please add at least 1 item for the order!'
 }

@@ -24,22 +24,22 @@ export class OrderRedeemController {
     @ApiOperation({ summary: 'API create order' })
     @ApiBearerAuth()
     @UseGuards(StoreGuard)
-    @Post('/create-order')
+    @Post('/orders')
     @HttpCode(201)
     async createOrder(
         @Body() body: CreateOrderDto,
         @Store() store: TStore) {
-        return await this.orderRedeemService.createOrder(body, store.id);
+        return this.orderRedeemService.createOrder(body, store.id);
     }
 
     @ApiOperation({ summary: 'API create redeem' })
     @ApiBearerAuth()
     @UseGuards(UserGuard)
-    @Post('/create-redeem')
+    @Post('/redeems')
     @HttpCode(201)
     async createRedeem(
         @Body() body: CreateRedeemDto,
         @User() user: TUser) {
-        return await this.orderRedeemService.createRedeem(body, user.id);
+        return this.orderRedeemService.createRedeem(body, user.id);
     }
 }

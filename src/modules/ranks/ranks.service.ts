@@ -7,7 +7,7 @@ export class RanksService {
     constructor(private readonly ranksRepository: RanksRepository) { }
 
     async findById(id: string): Promise<Rank> {
-        return await this.ranksRepository.findOne({
+        return this.ranksRepository.findOne({
             where: {
                 id
             }
@@ -15,7 +15,7 @@ export class RanksService {
     }
 
     async findByName(name: string): Promise<Rank> {
-        return await this.ranksRepository.findOne({
+        return this.ranksRepository.findOne({
             where: {
                 name
             }

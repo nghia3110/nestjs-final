@@ -10,14 +10,6 @@ export class SendUserOTPDto {
     example: '0123456789',
   })
   phoneNumber: string;
-
-  @IsString()
-  @ApiProperty({
-    type: String,
-    description: 'Your hash',
-    example: 'string',
-  })
-  hash: string;
 }
 
 export class VerifyUserOTPDto {

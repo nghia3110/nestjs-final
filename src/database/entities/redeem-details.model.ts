@@ -1,7 +1,8 @@
-import { Column, DataType, ForeignKey, Model, Table } from "sequelize-typescript";
+import { BelongsTo, Column, DataType, ForeignKey, Model, Table } from "sequelize-typescript";
 import { Redeem } from "./redeem.model";
 import { RedeemItem } from "./redeem-items.model";
 import { BaseModel } from "../base.model";
+import { EStatus } from "src/constants";
 
 @Table({
     tableName: 'redeem_details',
@@ -24,4 +25,16 @@ export class RedeemDetail extends BaseModel {
         type: DataType.INTEGER
     })
     quantityRedeem: number;
+
+    @Column({
+        type: DataType.STRING,
+        defaultValue: EStatus.PENDING
+    })
+    status: string;
+
+    @BelongsTo(() => Redeem)
+    redeem: Redeem;
+
+    @BelongsTo(() => RedeemItem)
+    item: RedeemItem;
 }

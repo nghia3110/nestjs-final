@@ -31,7 +31,7 @@ export class MethodDetailsController {
     @HttpCode(200)
     async getListMethodDetails(
         @Query() query: GetListDto) {
-        return await this.methodDetailsService.getListMethodDetails(query);
+        return this.methodDetailsService.getListMethodDetails(query);
     }
 
     @ApiOperation({ summary: 'API get method detail by Id' })
@@ -40,7 +40,7 @@ export class MethodDetailsController {
     @Get('/:id')
     @HttpCode(200)
     async getMethodDetailById(@UuidParam('id') id: string) {
-        return await this.methodDetailsService.getMethodDetailById(id);
+        return this.methodDetailsService.getMethodDetailById(id);
     }
 
     @ApiOperation({ summary: 'API create method detail' })
@@ -54,7 +54,7 @@ export class MethodDetailsController {
     @Post()
     @HttpCode(201)
     async createMethodDetail(@Body() payload: CreateMethodDetailDto) {
-        return await this.methodDetailsService.createMethodDetail(payload);
+        return this.methodDetailsService.createMethodDetail(payload);
     }
 
     @ApiOperation({ summary: 'API update method detail' })
@@ -68,7 +68,7 @@ export class MethodDetailsController {
     @Put('/:id')
     @HttpCode(201)
     async updateMethodDetail(@UuidParam('id') id: string, @Body() payload: UpdateMethodDetailDto) {
-        return await this.methodDetailsService.updateMethodDetail(id, payload);
+        return this.methodDetailsService.updateMethodDetail(id, payload);
     }
 
     @ApiOperation({ summary: 'API delete method detail' })
@@ -77,6 +77,6 @@ export class MethodDetailsController {
     @Delete('/:id')
     @HttpCode(200)
     async deleteMethodDetail(@UuidParam('id') id: string) {
-        return await this.methodDetailsService.deleteMethodDetail(id);
+        return this.methodDetailsService.deleteMethodDetail(id);
     }
 }

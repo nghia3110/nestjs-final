@@ -15,11 +15,12 @@ import {
     ApiOperation,
     ApiTags
 } from "@nestjs/swagger";
-import { AdminService } from "./admin.service";
-import { AdminGuard, UuidParam } from "src/utils";
 import { GetListDto } from "src/database";
-import { CreateUserDto, UpdateUserDto } from "../users";
+import { AdminGuard, UuidParam } from "src/utils";
 import { CreateStoreDto, UpdateStoreDto } from "../stores";
+import { CreateUserDto, UpdateUserDto } from "../users";
+import { AdminService } from "./admin.service";
+import { LoginAdminDto } from "./dto";
 
 @ApiTags('admin')
 @Controller('admin')
@@ -28,23 +29,35 @@ export class AdminController {
         private readonly adminService: AdminService
     ) { }
 
+    @ApiOperation({ summary: 'API Login' })
+    @ApiBody({
+      type: LoginAdminDto,
+      required: true,
+      description: 'Login admin',
+    })
+    @Post('/login')
+    @HttpCode(200)
+    async login(@Body() payload: LoginAdminDto) {
+      return this.adminService.login(payload);
+    }
+
     @ApiOperation({ summary: 'API get user by Id' })
     @ApiBearerAuth()
     @UseGuards(AdminGuard)
-    @Get('/get-user/:id')
+    @Get('/users/:id')
     @HttpCode(200)
     async getUserById(@UuidParam('id') id: string) {
-        return await this.adminService.getUserById(id);
+        return this.adminService.getUserById(id);
     }
 
     @ApiOperation({ summary: 'API get list users' })
     @ApiBearerAuth()
     @UseGuards(AdminGuard)
-    @Get('/get-users')
+    @Get('/users')
     @HttpCode(200)
     async getListUsers(
         @Query() query: GetListDto) {
-        return await this.adminService.getListUsers(query);
+        return this.adminService.getListUsers(query);
     }
 
     @ApiOperation({ summary: 'API create user' })
@@ -55,10 +68,10 @@ export class AdminController {
     })
     @ApiBearerAuth()
     @UseGuards(AdminGuard)
-    @Post('/create-user')
+    @Post('/users')
     @HttpCode(201)
     async createUser(@Body() payload: CreateUserDto) {
-        return await this.adminService.createUser(payload);
+        return this.adminService.createUser(payload);
     }
 
     @ApiOperation({ summary: 'API update user' })
@@ -69,38 +82,38 @@ export class AdminController {
     })
     @ApiBearerAuth()
     @UseGuards(AdminGuard)
-    @Put('/update-user/:id')
+    @Put('/users/:id')
     @HttpCode(201)
     async updateUser(@UuidParam('id') id: string, @Body() payload: UpdateUserDto) {
-        return await this.adminService.updateUser(id, payload);
+        return this.adminService.updateUser(id, payload);
     }
 
     @ApiOperation({ summary: 'API delete user' })
     @ApiBearerAuth()
     @UseGuards(AdminGuard)
-    @Delete('/delete-user/:id')
+    @Delete('/users/:id')
     @HttpCode(200)
     async deleteUser(@UuidParam('id') id: string) {
-        await this.adminService.deleteUser(id);
+        return this.adminService.deleteUser(id);
     }
 
     @ApiOperation({ summary: 'API get store by Id' })
     @ApiBearerAuth()
     @UseGuards(AdminGuard)
-    @Get('/get-store/:id')
+    @Get('/stores/:id')
     @HttpCode(200)
     async getStoreById(@UuidParam('id') id: string) {
-        return await this.adminService.getStoreById(id);
+        return this.adminService.getStoreById(id);
     }
 
     @ApiOperation({ summary: 'API get list stores' })
     @ApiBearerAuth()
     @UseGuards(AdminGuard)
-    @Get('/get-stores')
+    @Get('/stores')
     @HttpCode(200)
     async getListStores(
         @Query() query: GetListDto) {
-        return await this.adminService.getListStores(query);
+        return this.adminService.getListStores(query);
     }
 
     @ApiOperation({ summary: 'API create store' })
@@ -111,19 +124,19 @@ export class AdminController {
     })
     @ApiBearerAuth()
     @UseGuards(AdminGuard)
-    @Post('/create-store')
+    @Post('/stores')
     @HttpCode(201)
     async createStore(@Body() payload: CreateStoreDto) {
-        return await this.adminService.createStore(payload);
+        return this.adminService.createStore(payload);
     }
 
     @ApiOperation({ summary: 'API approve store' })
     @ApiBearerAuth()
     @UseGuards(AdminGuard)
-    @Put('/approve-store/:id')
+    @Put('/stores/:id/approve')
     @HttpCode(201)
     async approveStore(@UuidParam('id') id: string) {
-        return await this.adminService.approveStore(id);
+        return this.adminService.approveStore(id);
     }
 
     @ApiOperation({ summary: 'API update store' })
@@ -134,18 +147,18 @@ export class AdminController {
     })
     @ApiBearerAuth()
     @UseGuards(AdminGuard)
-    @Put('/update-store/:id')
+    @Put('/stores/:id')
     @HttpCode(201)
     async updateStore(@UuidParam('id') id: string, @Body() payload: UpdateStoreDto) {
-        return await this.adminService.updateStore(id, payload);
+        return this.adminService.updateStore(id, payload);
     }
 
     @ApiOperation({ summary: 'API delete store' })
     @ApiBearerAuth()
     @UseGuards(AdminGuard)
-    @Delete('//delete-store/:id')
+    @Delete('/stores/:id')
     @HttpCode(200)
     async deleteStore(@UuidParam('id') id: string) {
-        return await this.adminService.deleteStore(id);
+        return this.adminService.deleteStore(id);
     }
 }

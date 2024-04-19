@@ -31,7 +31,7 @@ export class StoresController {
         private ordersService: OrdersService,
         private itemsService: ItemsService,
         private redeemItemsService: RedeemItemsService
-        ) { }
+    ) { }
 
     @ApiOperation({ summary: 'API get users in store' })
     @ApiBearerAuth()
@@ -42,7 +42,7 @@ export class StoresController {
         @Store() store: TStore,
         @Query() query: GetListDto,
     ) {
-        return await this.storesService.getUsersInStore(store.id, query);
+        return this.storesService.getUsersInStore(store.id, query);
     }
 
     @ApiOperation({ summary: 'API get orders in store' })
@@ -54,7 +54,7 @@ export class StoresController {
         @Store() store: TStore,
         @Query() query: GetListDto,
     ) {
-        return await this.ordersService.paginateOrdersInStore(store.id, query);
+        return this.ordersService.paginateOrdersInStore(store.id, query);
     }
 
     @ApiOperation({ summary: 'API get items in store' })
@@ -66,7 +66,7 @@ export class StoresController {
         @Query() query: GetListDto,
         @Store() store: TStore
     ) {
-        return await this.itemsService.getItemsByStore(store.id, query);
+        return this.itemsService.getItemsByStore(store.id, query);
     }
 
     @ApiOperation({ summary: 'API get redeem items in store' })
@@ -78,16 +78,28 @@ export class StoresController {
         @Query() query: GetListDto,
         @Store() store: TStore
     ) {
-        return await this.redeemItemsService.getRedeemItemsByStore(store.id, query);
+        return this.redeemItemsService.getRedeemItemsByStore(store.id, query);
+    }
+
+    @ApiOperation({ summary: 'API get list order detail' })
+    @ApiBearerAuth()
+    @UseGuards(StoreGuard)
+    @Get('/orders/:id/order-details')
+    @HttpCode(200)
+    async getDetails(
+        @Query() query: GetListDto,
+        @UuidParam('id') orderId: string,
+        @Store() store: TStore) {
+        return this.ordersService.getDetails(query, orderId, store.id);
     }
 
     @ApiOperation({ summary: 'API complete order' })
     @ApiBearerAuth()
     @UseGuards(StoreGuard)
-    @Put('/complete-order/:orderId')
+    @Put('/orders/:id/complete')
     @HttpCode(201)
-    async completeOrder(@UuidParam('orderId') orderId: string, @Store() store: TStore) {
-        return await this.storesService.completeOrder(orderId, store.id);
+    async completeOrder(@UuidParam('id') orderId: string, @Store() store: TStore) {
+        return this.storesService.completeOrder(orderId, store.id);
     }
 
     @ApiOperation({ summary: 'API login store' })
@@ -99,7 +111,7 @@ export class StoresController {
     @Post("/login")
     @HttpCode(201)
     async login(@Body() payload: LoginDto) {
-        return await this.storesService.login(payload);
+        return this.storesService.login(payload);
     }
 
     @ApiOperation({ summary: 'API register store' })
@@ -111,7 +123,7 @@ export class StoresController {
     @Post("/register")
     @HttpCode(201)
     async register(@Body() payload: CreateStoreDto) {
-        return await this.storesService.register(payload);
+        return this.storesService.register(payload);
     }
 
     @ApiOperation({ summary: 'API send OTP' })
@@ -123,8 +135,8 @@ export class StoresController {
     @Post('/send-otp')
     @HttpCode(200)
     async sendOtp(@Body() payload: SendOTPDto) {
-        const { email, hash } = payload;
-        const result = await this.storesService.sendOTP(email, hash);
+        const { email } = payload;
+        const result = await this.storesService.sendOTP(email);
         return result;
     }
 

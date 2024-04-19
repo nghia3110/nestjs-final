@@ -19,6 +19,6 @@ export class SmsService {
 
   async sendOtp({to, otp}): Promise<MessageInstance> {
     const content = `Your OTP is ${otp}`;
-    return await this.sendSms(to, content);
+    return this.sendSms(to, content);
   }
 }

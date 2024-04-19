@@ -31,7 +31,7 @@ export class MethodsController {
     @HttpCode(200)
     async getListMethods(
         @Query() query: GetListDto) {
-        return await this.methodsService.getListMethods(query);
+        return this.methodsService.getListMethods(query);
     }
 
     @ApiOperation({ summary: 'API get method by Id' })
@@ -40,7 +40,7 @@ export class MethodsController {
     @Get('/:id')
     @HttpCode(200)
     async getMethodById(@UuidParam('id') id: string) {
-        return await this.methodsService.findById(id);
+        return this.methodsService.findById(id);
     }
 
     @ApiOperation({ summary: 'API create method' })
@@ -54,7 +54,7 @@ export class MethodsController {
     @Post()
     @HttpCode(201)
     async createMethod(@Body() payload: CreateMethodDto) {
-        return await this.methodsService.createMethod(payload);
+        return this.methodsService.createMethod(payload);
     }
 
     @ApiOperation({ summary: 'API update method' })
@@ -68,7 +68,7 @@ export class MethodsController {
     @Put('/:id')
     @HttpCode(201)
     async updateMethod(@UuidParam('id') id: string, @Body() payload: UpdateMethodDto) {
-        return await this.methodsService.updateMethod(id, payload);
+        return this.methodsService.updateMethod(id, payload);
     }
 
     @ApiOperation({ summary: 'API delete method' })
@@ -77,6 +77,6 @@ export class MethodsController {
     @Delete('/:id')
     @HttpCode(200)
     async deleteMethod(@UuidParam('id') id: string) {
-        return await this.methodsService.deleteMethod(id);
+        return this.methodsService.deleteMethod(id);
     }
 }

@@ -40,7 +40,7 @@ export class UploadController {
   @HttpCode(200)
   @UseInterceptors(FileInterceptor('file', multerOptions.imageFilter))
   async multerUpload(@UploadedFile() file: Express.Multer.File) {
-    return await this.uploadService.multerUpload(file);
+    return this.uploadService.multerUpload(file);
   }
 
 }

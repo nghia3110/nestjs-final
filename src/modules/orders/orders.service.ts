@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { AMOUNT_INCREASE_POINT, ORDER } from "src/constants";
+import { AMOUNT_INCREASE_POINT, EStatus, ORDER } from "src/constants";
 import { GetListDto, MethodDetail, Order, OrderDetail, Store, User } from "src/database";
 import { IMessageResponse, IPaginationRes } from "src/interfaces";
 import { ErrorHelper } from "src/utils";
@@ -113,17 +113,29 @@ export class OrdersService {
     async calcOrderAmount(orderId: string): Promise<number> {
         const orderDetails = await this.orderDetailsService.getOrderDetailsByOrder(orderId);
 
+        if(orderDetails.length === 0) {
+            ErrorHelper.BadRequestException(ORDER.NOT_ENOUGH_ITEM);
+        }
+
         const totalAmount = orderDetails.reduce((total, currentDetail) => {
             return total + (currentDetail.quantityOrdered * currentDetail.item.price);
         }, 0);
 
+        return totalAmount;
+    }
+
+    async processOrder(orderId: string): Promise<void> {
+        const orderDetails = await this.orderDetailsService.getOrderDetailsByOrder(orderId);
+        
         await this.itemsService.updateItemsQuantity(orderDetails);
 
         const orderDetailsIds = orderDetails.map(detail => detail.id);
+        await this.ordersRepository.update(
+            {
+                status: EStatus.SUCCESS
+            }, { where: { id: orderId } });
 
         await this.orderDetailsService.updateStatusOrderDetails(orderDetailsIds);
-
-        return totalAmount;
     }
 
     async createOrder(body: CreateOrderDto, storeId: string): Promise<Order> {
@@ -173,11 +185,21 @@ export class OrdersService {
         return this.orderDetailsService.createManyOrderDetails(body);
     }
 
-    async updateOrderDetails(id: string, body: UpdateOrderDetailDto): Promise<OrderDetail[]> {
+    async updateOrderDetail(id: string, body: UpdateOrderDetailDto): Promise<OrderDetail[]> {
         const orderDetail = await this.orderDetailsService.getOrderDetailById(id);
         if (body.orderId && body.orderId !== orderDetail.orderId) {
             await this.getOrderById(body.orderId);
         }
         return this.orderDetailsService.updateOrderDetail(id, body, orderDetail);
+    }
+
+    async getDetails(paginateInfo: GetListDto, orderId: string, storeId: string): Promise<IPaginationRes<OrderDetail>> {
+        const order = await this.getOrderById(orderId);
+
+        if (order.storeId !== storeId) {
+            ErrorHelper.BadRequestException(ORDER.ORDER_NOT_FOUND);
+        }
+
+        return this.orderDetailsService.paginateDetailByOrder(paginateInfo, orderId);
     }
 }

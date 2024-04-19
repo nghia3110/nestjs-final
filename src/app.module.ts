@@ -12,15 +12,14 @@ import {
   UploadsModule,
   UsersModule,
 } from './modules';
-import { RanksModule } from './modules/ranks/ranks.module';
-import { IoRedisModule } from './utils';
-import { RedeemItemsModule } from './modules/redeem-items';
-import { SmsModule } from './modules/sms/sms.module';
-import { RedeemsModule } from './modules/redeems';
-import { RedeemDetailsModule } from './modules/redeem-details';
-import { OrderRedeemModule } from './modules/order-redeem';
 import { AdminModule } from './modules/admin';
-
+import { OrderRedeemModule } from './modules/order-redeem';
+import { RanksModule } from './modules/ranks/ranks.module';
+import { RedeemDetailsModule } from './modules/redeem-details';
+import { RedeemItemsModule } from './modules/redeem-items';
+import { RedeemsModule } from './modules/redeems';
+import { SmsModule } from './modules/sms/sms.module';
+import { IoRedisModule } from './utils';
 
 @Module({
   imports: [

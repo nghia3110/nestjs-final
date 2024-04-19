@@ -32,31 +32,52 @@ export class UsersController {
     private readonly redeemItemsService: RedeemItemsService,
   ) { }
 
+  @ApiOperation({ summary: 'API get profile' })
+  @ApiBearerAuth()
+  @UseGuards(UserGuard)
+  @Get('/profile')
+  @HttpCode(200)
+  async getProfile(@User() user: TUser) {
+    return this.usersService.getUserById(user.id);
+  }
+
   @ApiOperation({ summary: 'API get redeem by user' })
   @ApiBearerAuth()
   @UseGuards(UserGuard)
   @Get('/redeems')
   @HttpCode(200)
   async getRedeemsByUser(@Query() query: GetListDto, @User() user: TUser) {
-    return await this.redeemsService.getRedeemsByUser(query, user.id);
+    return this.redeemsService.getRedeemsByUser(query, user.id);
+  }
+
+  @ApiOperation({ summary: 'API get list redeem detail' })
+  @ApiBearerAuth()
+  @UseGuards(UserGuard)
+  @Get('/redeems/:id/redeem-details')
+  @HttpCode(200)
+  async getDetails(
+    @Query() query: GetListDto,
+    @UuidParam('id') redeemId: string,
+    @User() user: TUser) {
+    return this.redeemsService.getDetails(query, redeemId, user.id);
   }
 
   @ApiOperation({ summary: 'API get redeem item in store' })
   @ApiBearerAuth()
   @UseGuards(UserGuard)
-  @Get('/get-redeem-item/store/:storeId')
+  @Get('/stores/:id/redeem-items')
   @HttpCode(200)
-  async getRedeemItemsByStore(@Query() query: GetListDto, @UuidParam('storeId') storeId: string) {
-    return await this.redeemItemsService.getRedeemItemsByStore(storeId, query);
+  async getRedeemItemsByStore(@Query() query: GetListDto, @UuidParam('id') storeId: string) {
+    return this.redeemItemsService.getRedeemItemsByStore(storeId, query);
   }
 
   @ApiOperation({ summary: 'API complete redeem' })
   @ApiBearerAuth()
   @UseGuards(UserGuard)
-  @Put('/complete-redeem/:redeemId')
+  @Put('/redeems/:id/complete')
   @HttpCode(201)
-  async completeOrder(@UuidParam('redeemId') redeemId: string, @User() user: TUser) {
-    return await this.usersService.completeRedeem(redeemId, user.id);
+  async completeOrder(@UuidParam('id') redeemId: string, @User() user: TUser) {
+    return this.usersService.completeRedeem(redeemId, user.id);
   }
 
   @ApiOperation({ summary: 'API Login' })
@@ -80,7 +101,7 @@ export class UsersController {
   @Post("/register")
   @HttpCode(201)
   async register(@Body() payload: CreateUserDto) {
-    return await this.usersService.register(payload);
+    return this.usersService.register(payload);
   }
 
   @ApiOperation({ summary: 'API send OTP' })
@@ -92,8 +113,8 @@ export class UsersController {
   @Post('/send-otp')
   @HttpCode(200)
   async sendOtp(@Body() payload: SendUserOTPDto) {
-    const { phoneNumber, hash } = payload;
-    const result = await this.usersService.sendOTP(phoneNumber, hash);
+    const { phoneNumber } = payload;
+    const result = await this.usersService.sendOTP(phoneNumber);
     return result;
   }
 

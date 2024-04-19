@@ -9,7 +9,11 @@ export function IsValidDate(validationOptions?: ValidationOptions) {
       options: validationOptions,
       validator: {
         validate(value: string) {
-          return typeof value === 'string' && new Date(value) >= new Date();
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const comparisonDate = new Date(value);
+          comparisonDate.setHours(0, 0, 0, 0);
+          return typeof value === 'string' && comparisonDate >= today;
         },
       },
     });

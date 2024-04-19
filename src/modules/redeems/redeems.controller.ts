@@ -21,7 +21,6 @@ import {
     UpdateRedeemDetailDto
 } from '../redeem-details';
 import {
-    CreateRedeemDto,
     UpdateRedeemDto
 } from './dto';
 import { RedeemsService } from './redeems.service';
@@ -31,7 +30,6 @@ import { RedeemsService } from './redeems.service';
 export class RedeemsController {
     constructor(
         private redeemsService: RedeemsService,
-        private redeemDetailsService: RedeemDetailsService
     ) { }
 
     @ApiOperation({ summary: 'API get list redeems' })
@@ -41,7 +39,7 @@ export class RedeemsController {
     @HttpCode(200)
     async getListRedeems(
         @Query() query: GetListDto) {
-        return await this.redeemsService.getListRedeems(query);
+        return this.redeemsService.getListRedeems(query);
     }
 
     @ApiOperation({ summary: 'API get redeem by Id' })
@@ -50,7 +48,7 @@ export class RedeemsController {
     @Get('/:id')
     @HttpCode(200)
     async getRedeemById(@UuidParam('id') id: string) {
-        return await this.redeemsService.getRedeemById(id);
+        return this.redeemsService.getRedeemById(id);
     }
 
     @ApiOperation({ summary: 'API update redeem' })
@@ -64,44 +62,7 @@ export class RedeemsController {
     @Put('/:id')
     @HttpCode(201)
     async updateRedeem(@UuidParam('id') id: string, @Body() payload: UpdateRedeemDto, @User() user: TUser) {
-        return await this.redeemsService.updateRedeem(id, payload, user.id);
-    }
-
-    @ApiOperation({ summary: 'API delete redeem' })
-    @ApiBearerAuth()
-    @UseGuards(UserGuard)
-    @Delete('/:id')
-    @HttpCode(200)
-    async deleteRedeem(@UuidParam('id') id: string, @User() user: TUser) {
-        return await this.redeemsService.deleteRedeem(id, user.id);
-    }
-
-    @ApiOperation({ summary: 'API create redeem detail' })
-    @ApiBody({
-        type: CreateRedeemDetailDto,
-        required: true,
-        description: 'Create redeem detail'
-    })
-    @ApiBearerAuth()
-    @UseGuards(UserGuard)
-    @Post('/redeem-detail/create')
-    @HttpCode(201)
-    async createRedeemDetail(@Body() payload: CreateRedeemDetailDto) {
-        return await this.redeemDetailsService.createRedeemDetail(payload);
-    }
-
-    @ApiOperation({ summary: 'API create redeem details' })
-    @ApiBody({
-        type: CreateManyRedeemDetailsDto,
-        required: true,
-        description: 'Create redeem details'
-    })
-    @ApiBearerAuth()
-    @UseGuards(UserGuard)
-    @Post('/redeem-detail/create-many')
-    @HttpCode(201)
-    async createManyRedeemDetails(@Body() payload: CreateManyRedeemDetailsDto) {
-        return await this.redeemDetailsService.createManyRedeemDetails(payload);
+        return this.redeemsService.updateRedeem(id, payload, user.id);
     }
 
     @ApiOperation({ summary: 'API update redeem detail' })
@@ -112,9 +73,46 @@ export class RedeemsController {
     })
     @ApiBearerAuth()
     @UseGuards(UserGuard)
-    @Put('/redeem-detail/:id')
+    @Put('/redeem-details/:id')
     @HttpCode(201)
     async updateRedeemDetail(@UuidParam('id') id: string, @Body() payload: UpdateRedeemDetailDto) {
-        return await this.redeemDetailsService.updateRedeemDetail(id, payload);
+        return this.redeemsService.updateRedeemDetail(id, payload);
+    }
+
+    @ApiOperation({ summary: 'API delete redeem' })
+    @ApiBearerAuth()
+    @UseGuards(UserGuard)
+    @Delete('/:id')
+    @HttpCode(200)
+    async deleteRedeem(@UuidParam('id') id: string, @User() user: TUser) {
+        return this.redeemsService.deleteRedeem(id, user.id);
+    }
+
+    @ApiOperation({ summary: 'API create redeem details' })
+    @ApiBody({
+        type: CreateManyRedeemDetailsDto,
+        required: true,
+        description: 'Create redeem details'
+    })
+    @ApiBearerAuth()
+    @UseGuards(UserGuard)
+    @Post('/redeem-details/create-many')
+    @HttpCode(201)
+    async createManyRedeemDetails(@Body() payload: CreateManyRedeemDetailsDto) {
+        return this.redeemsService.createManyRedeemDetails(payload);
+    }
+
+    @ApiOperation({ summary: 'API create redeem detail' })
+    @ApiBody({
+        type: CreateRedeemDetailDto,
+        required: true,
+        description: 'Create redeem detail'
+    })
+    @ApiBearerAuth()
+    @UseGuards(UserGuard)
+    @Post('/redeem-details')
+    @HttpCode(201)
+    async createRedeemDetail(@Body() payload: CreateRedeemDetailDto) {
+        return this.redeemsService.createRedeemDetail(payload);
     }
 }

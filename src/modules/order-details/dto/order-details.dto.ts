@@ -43,7 +43,7 @@ export class UpdateOrderDetailDto extends PartialType(CreateOrderDetailDto) {
     status: string;
 }
 
-class OrderedItemDetail {
+export class OrderedItemDetail {
     @IsUUID()
     @IsString()
     @IsNotEmpty({ message: REQUIRED_VALIDATE('itemId') })

@@ -24,7 +24,7 @@ export class RedeemDetailsController {
     @HttpCode(200)
     async getListRedeemDetails(
         @Query() query: GetListDto) {
-        return await this.redeemDetailsService.getListRedeemDetails(query);
+        return this.redeemDetailsService.getListRedeemDetails(query);
     }
 
     @ApiOperation({ summary: 'API get redeem detail by Id' })
@@ -33,7 +33,7 @@ export class RedeemDetailsController {
     @Get('/:id')
     @HttpCode(200)
     async getRedeemDetailById(@UuidParam('id') id: string) {
-        return await this.redeemDetailsService.getRedeemDetailById(id);
+        return this.redeemDetailsService.getRedeemDetailById(id);
     }
 
     @ApiOperation({ summary: 'API delete redeem detail' })
@@ -42,6 +42,6 @@ export class RedeemDetailsController {
     @Delete('/:id')
     @HttpCode(200)
     async deleteRedeemDetail(@UuidParam('id') id: string) {
-        return await this.redeemDetailsService.deleteRedeemDetail(id);
+        return this.redeemDetailsService.deleteRedeemDetail(id);
     }
 }

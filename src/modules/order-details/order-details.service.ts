@@ -4,15 +4,17 @@ import { GetListDto, Item, OrderDetail } from "src/database";
 import { IMessageResponse, IPaginationRes } from "src/interfaces";
 import { ErrorHelper } from "src/utils";
 import { ItemsService } from "../items";
-import { CreateManyDetailsDto, CreateOrderDetailDto, UpdateOrderDetailDto } from "./dto";
+import { CreateManyDetailsDto, CreateOrderDetailDto, OrderedItemDetail, UpdateOrderDetailDto } from "./dto";
 import { OrderDetailsRepository } from "./order-details.repository";
 import { Op } from "sequelize";
+import { Sequelize } from "sequelize-typescript";
 
 @Injectable()
 export class OrderDetailsService {
     constructor(
         private readonly orderDetailsRepository: OrderDetailsRepository,
-        private readonly itemsService: ItemsService
+        private readonly itemsService: ItemsService,
+        private sequelize: Sequelize
     ) { }
 
     async getListOrderDetails(paginateInfo: GetListDto): Promise<IPaginationRes<OrderDetail>> {
@@ -59,11 +61,53 @@ export class OrderDetailsService {
         });
     }
 
+    async paginateDetailByOrder(paginateInfo: GetListDto, orderId: string): Promise<IPaginationRes<OrderDetail>> {
+        const { page, limit } = paginateInfo;
+        return this.orderDetailsRepository.paginate(parseInt(page), parseInt(limit), {
+            where: {
+                orderId,
+            },
+            include: [
+                {
+                    model: Item,
+                    as: 'item',
+                    attributes: ['name', 'price']
+                }
+            ],
+            raw: false,
+            nest: true
+        });
+    }
+
     async createOrderDetail(body: CreateOrderDetailDto): Promise<OrderDetail> {
         const item = await this.itemsService.getItemById(body.itemId);
 
+        if (item.quantityInStock === 0) {
+            ErrorHelper.BadRequestException(`Item ${item.name} is out of stock!`);
+        }
+
         if (body.quantityOrdered > item.quantityInStock) {
             ErrorHelper.BadRequestException(ORDER_DETAIL.OVER_QUANTITY(item.name, item.quantityInStock));
+        }
+
+        const detail = await this.orderDetailsRepository.findOne({
+            where: {
+                itemId: item.id,
+                orderId: body.orderId
+            }
+        });
+
+        if (detail && detail.status !== EStatus.SUCCESS) {
+            if (detail.quantityOrdered + body.quantityOrdered > item.quantityInStock) {
+                ErrorHelper.BadRequestException(ORDER_DETAIL.OVER_QUANTITY(item.name, item.quantityInStock));
+            }
+            await this.orderDetailsRepository.update({
+                quantityOrdered: detail.quantityOrdered + body.quantityOrdered
+            },
+                {
+                    where: { id: detail.id }
+                });
+            return this.orderDetailsRepository.findOne({ where: { id: detail.id } });
         }
 
         return this.orderDetailsRepository.create(body);
@@ -71,34 +115,93 @@ export class OrderDetailsService {
 
     async createManyOrderDetails(body: CreateManyDetailsDto): Promise<OrderDetail[]> {
         const errors: string[] = [];
-        const itemsPromise = body.orderedItems.map(async (orderedItem) => {
-            const item = await this.itemsService.getItemById(orderedItem.itemId);
-            if (orderedItem.quantityOrdered > item.quantityInStock) {
-                errors.push(ORDER_DETAIL.OVER_QUANTITY(item.name, item.quantityInStock));
-            }
-            return {
-                ...orderedItem,
-                orderId: body.orderId
+
+        const uniqueItems: Map<string, OrderedItemDetail> = new Map();
+
+        body.orderedItems.forEach(item => {
+            const key = item.itemId;
+            if (!uniqueItems.get(key)) {
+                uniqueItems.set(key, item);
+            } else {
+                let existItem = uniqueItems.get(key);
+                existItem.quantityOrdered += item.quantityOrdered;
+                uniqueItems.set(key, existItem);
             }
         });
 
-        const items = await Promise.all(itemsPromise);
-        
-        if(errors.length > 0) {
-            ErrorHelper.BadRequestException(errors.join('\n'));
+        const uniqueItemsArray = Array.from(uniqueItems.values());
+
+        const transaction = await this.sequelize.transaction();
+        try {
+            for (const orderedItem of uniqueItemsArray) {
+                const item = await this.itemsService.getItemById(orderedItem.itemId);
+                if (item.quantityInStock === 0) {
+                    errors.push(ORDER_DETAIL.OUT_OF_STOCK(item.name));
+                    continue;
+
+                }
+                if (orderedItem.quantityOrdered > item.quantityInStock && item.quantityInStock > 0) {
+                    errors.push(ORDER_DETAIL.OVER_QUANTITY(item.name, item.quantityInStock));
+                    continue;
+                }
+
+                const detail = await this.orderDetailsRepository.findOne({
+                    where: {
+                        itemId: orderedItem.itemId,
+                        orderId: body.orderId
+                    },
+                    transaction
+                });
+
+                if (detail) {
+                    if (detail.status !== EStatus.SUCCESS) {
+                        if (detail.quantityOrdered + orderedItem.quantityOrdered > item.quantityInStock) {
+                            errors.push(ORDER_DETAIL.OVER_QUANTITY(item.name, item.quantityInStock));
+                        } else {
+                            await this.orderDetailsRepository.update(
+                                {
+                                    quantityOrdered: detail.quantityOrdered + orderedItem.quantityOrdered
+                                },
+                                {
+                                    where: { id: detail.id }
+                                },
+                            );
+                        }
+                    }
+                } else {
+                    await this.orderDetailsRepository.create({
+                        ...orderedItem,
+                        orderId: body.orderId
+                    }, { transaction });
+                }
+            }
+
+            if (errors.length > 0) {
+                ErrorHelper.BadRequestException(errors);
+            }
+
+            await transaction.commit();
+            return Promise.all(uniqueItemsArray.map(async item => this.orderDetailsRepository.findOne({
+                where: {
+                    itemId: item.itemId,
+                    orderId: body.orderId
+                }
+            })));
+        } catch (error) {
+            await transaction.rollback();
+            throw error;
         }
-        
-        return this.orderDetailsRepository.bulkCreate(items);
+
     }
 
     async updateOrderDetail(id: string, body: UpdateOrderDetailDto, detail?: OrderDetail): Promise<OrderDetail[]> {
         const orderDetail = detail ? detail : await this.getOrderDetailById(id);
-
+        let item: Item;
         if (body.itemId && body.itemId !== orderDetail.itemId) {
-            await this.itemsService.getItemById(body.itemId);
+            item = await this.itemsService.getItemById(body.itemId);
+        } else {
+            item = await this.itemsService.getItemById(orderDetail.itemId);
         }
-
-        const item = await this.itemsService.getItemById(orderDetail.itemId);
         if (body.quantityOrdered && body.quantityOrdered > item.quantityInStock) {
             ErrorHelper.BadRequestException(ORDER_DETAIL.OVER_QUANTITY(item.name, item.quantityInStock));
         }
