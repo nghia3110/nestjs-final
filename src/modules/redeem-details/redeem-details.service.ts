@@ -181,7 +181,8 @@ export class RedeemDetailsService {
                                     quantityRedeem: detail.quantityRedeem + redeemItem.quantityRedeem
                                 },
                                 {
-                                    where: { id: detail.id }
+                                    where: { id: detail.id },
+                                    transaction
                                 },
                             );
                         }

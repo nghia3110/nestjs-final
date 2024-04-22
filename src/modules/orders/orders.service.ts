@@ -139,12 +139,13 @@ export class OrdersService {
     }
 
     async createOrder(body: CreateOrderDto, storeId: string): Promise<Order> {
-        return this.ordersRepository.create(
+        const newOrder = await this.ordersRepository.create(
             {
                 ...body,
                 storeId,
             }
-        )
+        );
+        return this.getOrderById(newOrder.id);
     }
 
     async updateOrder(id: string, body: UpdateOrderDto, storeId: string): Promise<Order[]> {
