@@ -120,12 +120,13 @@ export class RedeemsService {
     }
 
     async createRedeem(body: CreateRedeemDto, userId: string): Promise<Redeem> {
-        return this.redeemsRepository.create(
+        const newRedeem = await this.redeemsRepository.create(
             {
                 ...body,
                 userId,
             }
-        )
+        );
+        return this.getRedeemById(newRedeem.id);
     }
 
     async updateRedeem(id: string, body: UpdateRedeemDto, userId: string): Promise<Redeem[]> {

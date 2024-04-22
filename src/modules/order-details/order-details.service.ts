@@ -36,7 +36,16 @@ export class OrderDetailsService {
         const orderDetail = await this.orderDetailsRepository.findOne({
             where: {
                 id
-            }
+            },
+            include: [
+                {
+                    model: Item,
+                    as: 'item',
+                    attributes: ['name']
+                }
+            ],
+            raw: false,
+            nest: true
         });
         if (!orderDetail) {
             ErrorHelper.BadRequestException(ORDER_DETAIL.ORDER_DETAIL_NOT_FOUND);
@@ -107,10 +116,11 @@ export class OrderDetailsService {
                 {
                     where: { id: detail.id }
                 });
-            return this.orderDetailsRepository.findOne({ where: { id: detail.id } });
+            return this.getOrderDetailById(detail.id);
         }
 
-        return this.orderDetailsRepository.create(body);
+        const newDetail = await this.orderDetailsRepository.create(body);
+        return this.getOrderDetailById(newDetail.id);
     }
 
     async createManyOrderDetails(body: CreateManyDetailsDto): Promise<OrderDetail[]> {
@@ -163,7 +173,8 @@ export class OrderDetailsService {
                                     quantityOrdered: detail.quantityOrdered + orderedItem.quantityOrdered
                                 },
                                 {
-                                    where: { id: detail.id }
+                                    where: { id: detail.id },
+                                    transaction
                                 },
                             );
                         }
